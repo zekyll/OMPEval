@@ -154,7 +154,7 @@ private:
     static const unsigned MAX_KEY;
     static const size_t FLUSH_LOOKUP_SIZE = 8192;
     static uint16_t* ORIG_LOOKUP;
-    static uint16_t LOOKUP[190560 + RECALCULATE_PERF_HASH * 100000000];
+    static uint16_t LOOKUP[190641 + RECALCULATE_PERF_HASH * 100000000];
     static uint16_t FLUSH_LOOKUP[FLUSH_LOOKUP_SIZE];
     static uint32_t PERF_HASH_ROW_OFFSETS[8982 + RECALCULATE_PERF_HASH * 100000];
 };
