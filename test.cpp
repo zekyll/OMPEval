@@ -2,13 +2,14 @@
 #include "OMPEval.h"
 #include <iostream>
 #include <chrono>
+#include <random>
 
 using namespace std;
 
-// Measure evaluation speed when enumerating card combinations in order.
-void enumerationSpeedTest()
+// Evaluating hands in sequential order.
+void sequentialEvaluationBenchmark()
 {
-    cout << "Enumeration speed test:" << endl;
+    cout << endl << "Sequential evaluation:" << endl;
 
     HandEvaluator eval;
     unsigned sum = 0;
@@ -50,8 +51,91 @@ void enumerationSpeedTest()
     cout << count << " evals  " << (1e-6 * count / t) << "M/s  " << t << "s  " << sum << endl;
 }
 
+// Evaluating random hands.
+void randomEvaluationBenchmark()
+{
+    cout << endl << "Random order evaluation (precalculated Hand objects):" << endl;
+    mt19937_64 rng(0);
+    uniform_int_distribution<unsigned> rnd(0, 51);
+    HandEvaluator eval;
+    uint64_t count = 0;
+    unsigned sum = 0;
+
+    vector<Hand> table;
+    for (unsigned i = 0; i < 10000000; ++i) {
+        uint64_t usedCardsMask = 0;
+        table.push_back(Hand::empty());
+        for(unsigned j = 0; j < 7; ++j) {
+            unsigned card;
+            uint64_t cardMask;
+            do {
+                card = rnd(rng);
+                cardMask = 1ull << card;
+            } while (usedCardsMask & cardMask);
+            usedCardsMask |= cardMask;
+            table.back().combine(card);
+        }
+    }
+
+    auto t1 = chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < 50; ++i) {
+        for (auto& hand: table) {
+            sum += eval.evaluate(hand);
+            ++count;
+        }
+    }
+
+    auto t2 = chrono::high_resolution_clock::now();
+    double t = 1e-9 * chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count();
+    cout << count << " evals  " << (1e-6 * count / t) << "M/s  " << t << "s  " << sum << endl;
+}
+
+// Evaluating random hands.
+void randomEvaluationBenchmark2()
+{
+    cout << endl << "Random order evaluation (card arrays):" << endl;
+    mt19937_64 rng(0);
+    uniform_int_distribution<unsigned> rnd(0, 51);
+    HandEvaluator eval;
+    uint64_t count = 0;
+    unsigned sum = 0;
+
+    vector<array<uint8_t,7>> table;
+    for (unsigned i = 0; i < 10000000; ++i) {
+        uint64_t usedCardsMask = 0;
+        table.push_back({});
+        for(auto& card : table.back()) {
+            uint64_t cardMask;
+            do {
+                card = rnd(rng);
+                cardMask = 1ull << card;
+            } while (usedCardsMask & cardMask);
+            usedCardsMask |= cardMask;
+        }
+    }
+
+    auto t1 = chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < 50; ++i) {
+        for (auto& hand: table) {
+            Hand h = Hand::empty();
+            for (uint8_t c : hand)
+                h.combine(c);
+            sum += eval.evaluate(h);
+            ++count;
+        }
+    }
+
+    auto t2 = chrono::high_resolution_clock::now();
+    double t = 1e-9 * chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count();
+    cout << count << " evals  " << (1e-6 * count / t) << "M/s  " << t << "s  " << sum << endl;
+}
+
 int main()
 {
-    enumerationSpeedTest();
-    cout << "Done." << endl;
+    sequentialEvaluationBenchmark();
+    randomEvaluationBenchmark();
+    randomEvaluationBenchmark2();
+    cout << endl << "Done." << endl;
 }
