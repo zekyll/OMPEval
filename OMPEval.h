@@ -1,9 +1,14 @@
 #ifndef OMPEVAL_H
 #define OMPEVAL_H
 
+#include "util.h"
 #include <array>
 #include <cstdint>
-#include <intrin.h>
+#include <xmmintrin.h>
+
+#ifndef OMP_SSE
+    #define OMP_SSE 0
+#endif
 
 // Some constants.
 struct Pok
@@ -57,9 +62,12 @@ struct Hand : public Pok
     // Combine with another hand.
     void combine(const Hand& hand2)
     {
-        //magic += hand2.magic;
-        //mask |= hand2.mask;
-        mData = _mm_add_epi64 (mData, hand2.mData);
+        #if _MSC_VER && OMP_SSE
+        mData = _mm_add_epi64(mData, hand2.mData);
+        #else
+        mKey += hand2.mKey;
+        mMask |= hand2.mMask;
+        #endif
     }
 
     // Initialize an empty hand.
@@ -69,24 +77,55 @@ struct Hand : public Pok
         return {0x333300000000, 0};
     }
 
+    // Returns the suit counters.
+    unsigned suits()
+    {
+        return key() >> 32;
+    }
+
 private:
     static Hand CARDS[CARD_COUNT];
     static const uint64_t FLUSH_CHECK_MASK = 0x888800000000;
 
-    Hand(uint64_t magic, uint64_t mask)
-        //: magic(magic),
-        //  mask(mask)
+
+    uint64_t key() const
     {
-        mData.m128i_u64[0] = magic;
+        #if _MSC_VER && OMP_SSE
+        return mData.m128i_u64[0];
+        #else
+        return mKey;
+        #endif
+    }
+
+    uint64_t mask() const
+    {
+        #if _MSC_VER && OMP_SSE
+        return mData.m128i_u64[1];
+        #else
+        return mMask;
+        #endif
+    }
+
+    Hand(uint64_t key, uint64_t mask)
+    {
+        #if _MSC_VER && OMP_SSE
+        mData.m128i_u64[0] = key;
         mData.m128i_u64[1] = mask;
+        #else
+        mKey = key;
+        mMask = mask;
+        #endif
     }
 
     // Bits 0-31: key to non-flush lookup table (linear combination of the rank constants)
     // Bits 32-48: suit counters
     // Bits 64-128: bit mask for all cards (suits are in 16-bit groups).
+    #if _MSC_VER && OMP_SSE
     __m128i mData;
-    //uint64_t magic;
-    //uint64_t mask;
+    #else
+    uint64_t mKey;
+    uint64_t mMask;
+    #endif
 
     friend class HandEvaluator;
 };
@@ -104,19 +143,15 @@ public:
     {
         // Hand has a 4-bit counter for each suit. It starts at 3 so the 4th bit gets set when there is 5 or more cards
         // of that suit.
-        uint64_t flushCheck = hand.mData.m128i_u64[0] & Hand::FLUSH_CHECK_MASK;
+        uint64_t flushCheck = hand.key() & Hand::FLUSH_CHECK_MASK;
         if (!flushCheck) {
             // Get lookup key from the low 32 bits.
-            //uint32_t key = (uint32_t)hand.magic;
-            unsigned key = (uint32_t)hand.mData.m128i_u64[0];
+            unsigned key = (uint32_t)hand.key();
             return LOOKUP[perfHash(key)];
         } else {
             // Get the index of the flush check bit and use it to get the card mask for that suit.
-            unsigned long bitIdx;
-            _BitScanForward(&bitIdx, flushCheck >> 35);
-            unsigned shift = bitIdx << 2;
-            //uint16_t flushKey = (uint16_t)(hand.mask >> shift);
-            unsigned flushKey = (uint16_t)(hand.mData.m128i_u64[1] >> shift); // Get card mask of the correct suit.
+            unsigned shift = countTrailingZeros((unsigned)(flushCheck >> 35)) << 2;
+            unsigned flushKey = (uint16_t)(hand.mask() >> shift); // Get card mask of the correct suit.
             return FLUSH_LOOKUP[flushKey];
         }
     }

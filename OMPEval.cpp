@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <iostream>
+#include <algorithm>
+#include <cstring>
 
 // Rank multipliers that guarantee a unique key for every rank combination in a 0-7 card hand.
 const unsigned HandEvaluator::RANKS[]{1, 5, 24, 112, 521, 2247, 9244, 30823, 103066, 250154, 667453, 1526359, 3453520};
@@ -231,7 +233,7 @@ void HandEvaluator::calculatePerfectHash()
             ++totalCacheLines;
             bool used = false;
             for (size_t j = 0; j < 64 && i + j < elementSize * count; j += elementSize) {
-                if (memcmp(p + i + j, dummy, elementSize)) {
+                if (std::memcmp(p + i + j, dummy, elementSize)) {
                     ++usedElements;
                     used = true;
                 }
