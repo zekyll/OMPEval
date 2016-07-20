@@ -104,7 +104,7 @@ unsigned HandEvaluator::populateLookup(uint64_t ranks, unsigned ncards, unsigned
                                             unsigned maxPair, unsigned maxTrips, unsigned maxStraight, bool flush)
 {
     // Only increment hand value counter for every valid 5 card combination. (Or smaller hands if enabled.)
-    if (ncards <= 5 && ncards >= std::min<unsigned>(MIN_CARDS, 5))
+    if (ncards <= 5 && ncards >= (MIN_CARDS < 5 ? MIN_CARDS : 5))
         ++handValue;
 
     // Write hand value to lookup when we have required number of cards.
