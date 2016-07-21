@@ -120,8 +120,13 @@ void randomEvaluationBenchmark2()
     for (int i = 0; i < 50; ++i) {
         for (auto& hand: table) {
             Hand h = Hand::empty();
-            for (uint8_t c : hand)
-                h.combine(c);
+            h.combine(hand[0]);
+            h.combine(hand[1]);
+            h.combine(hand[2]);
+            h.combine(hand[3]);
+            h.combine(hand[4]);
+            h.combine(hand[5]);
+            h.combine(hand[6]);
             sum += eval.evaluate(h);
             ++count;
         }
