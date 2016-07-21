@@ -70,6 +70,20 @@ struct Hand : public Pok
         #endif
     }
 
+    void combineNoFlush(unsigned cardIdx)
+    {
+        combineNoFlush(CARDS[cardIdx]);
+    }
+
+    void combineNoFlush(const Hand& hand2)
+    {
+        #if _MSC_VER && OMP_SSE
+        mData.m128i_u64[0] += hand2.mData.m128i_u64[0];
+        #else
+        mKey += hand2.mKey;
+        #endif
+    }
+
     // Initialize an empty hand.
     static Hand empty()
     {
@@ -139,12 +153,12 @@ public:
     // Returns the rank of a hand as a 16-bit integer. Higher value is better. Can also rank hands with less than 5
     // cards. A missing card is considered the worst kicker, e.g. K < KQJT8 < A < AK < KKAQJ < AA < AA2 < AA4 < AA432.
     // Hand category can be extracted by dividing the value by 4096. 1=highcard, 2=pair, etc.
-    uint16_t evaluate(Hand hand)
+    uint16_t evaluate(const Hand& hand, bool flushPossible = true)
     {
         // Hand has a 4-bit counter for each suit. It starts at 3 so the 4th bit gets set when there is 5 or more cards
         // of that suit.
         uint64_t flushCheck = hand.key() & Hand::FLUSH_CHECK_MASK;
-        if (!flushCheck) {
+        if (!flushPossible || !flushCheck) {
             // Get lookup key from the low 32 bits.
             unsigned key = (uint32_t)hand.key();
             return LOOKUP[perfHash(key)];
