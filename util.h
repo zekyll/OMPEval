@@ -28,8 +28,10 @@ inline unsigned bitCount(unsigned x)
 
 inline unsigned bitCount(unsigned long long x)
 {
-    #if _MSC_VER
+    #if _MSC_VER && _M_X64
     return (unsigned)__popcnt64(x);
+    #elif _MSC_VER
+    return __popcnt((unsigned)x) + __popcnt((unsigned)(x >> 32));
     #else
     return __builtin_popcount(x);
     #endif
