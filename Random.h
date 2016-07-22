@@ -120,7 +120,7 @@ public:
 
     void init(T min, T max)
     {
-        mMin = mMin;
+        mMin = min;
         mDiff = max - min + 1;
         mBufferUsesLeft = 0;
     }
