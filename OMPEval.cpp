@@ -34,7 +34,8 @@ void HandEvaluator::staticInit()
     // Initialize card constants.
     for (unsigned c = 0; c < CARD_COUNT; ++c) {
         unsigned rank = c / 4, suit = c % 4;
-        Hand::CARDS[c] = Hand((1ull << (4 * suit + 32)) + RANKS[rank], 1ull << (suit * 16 + rank));
+        Hand::CARDS[c] = Hand((1ull << (4 * suit + 32)) + (1ull << Hand::CARD_COUNTER_SHIFT) + RANKS[rank],
+                              1ull << (suit * 16 + rank));
     }
 
     // Temporary table for hash recalculation.

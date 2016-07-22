@@ -106,15 +106,16 @@ struct Hand : public Pok
         return (suits() >> (4 * suit) & 0xf) - 3;
     }
 
-    // Total number of cards. (Slow!)
+    // Total number of cards.
     unsigned count() const
     {
-        return suitCount(0) + suitCount(1) + suitCount(2) + suitCount(3);
+        return mKey >> CARD_COUNTER_SHIFT;
     }
 
 private:
     static Hand CARDS[CARD_COUNT];
     static const uint64_t FLUSH_CHECK_MASK = 0x888800000000;
+    static const unsigned CARD_COUNTER_SHIFT = 48;
 
     uint64_t key() const
     {
