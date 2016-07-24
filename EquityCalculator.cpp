@@ -23,9 +23,13 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
     mBoardCards = boardCards;
     mOriginalHandRanges = handRanges;
     mHandRanges = removeInvalidCombos(handRanges, mDeadCards | mBoardCards);
-    for (auto& hr : mHandRanges)
-        if (hr.size() == 0)
+    std::vector<MultiRange> multiRanges = MultiRange::joinRanges(mHandRanges, MAX_MULTIRANGE_SIZE);
+    for (unsigned i = 0; i < multiRanges.size(); ++i) {
+        if (multiRanges[i].combos().size() == 0)
             return false;
+        mMultiRanges[i] = multiRanges[i];
+    }
+    mMultiRangeCount = multiRanges.size();
     mEvaluatorHands.resize(mHandRanges.size());
     for (size_t i = 0; i < mHandRanges.size(); ++i) {
         for (auto& h: mHandRanges[i])
@@ -70,39 +74,38 @@ void EquityCalculator::simulate()
     Rng rng{std::random_device{}()};
     UniformIntDistribution cardDist(0, 51);
     UniformIntDistribution comboDists[MAX_PLAYERS];
-    for (unsigned i = 0; i < nplayers; ++i)
-        comboDists[i] = UniformIntDistribution(0, (unsigned)mHandRanges[i].size() - 1);
-
-    uint64_t handMasks[MAX_PLAYERS][MAX_COMBOS];
-    for (unsigned i = 0; i < nplayers; ++i)
-        for (unsigned j = 0; j < mHandRanges[i].size(); ++j)
-            handMasks[i][j] = (1ull << mHandRanges[i][j][0]) | (1ull << mHandRanges[i][j][1]);
+    unsigned multiRangeCount = mMultiRangeCount;
+    for (unsigned i = 0; i < mMultiRangeCount; ++i)
+        comboDists[i] = UniformIntDistribution(0, (unsigned)mMultiRanges[i].combos().size() - 1);
 
     for (;;) {
         // Randomize hands and check for duplicate holecards.
-        uint64_t usedCardsMask = mDeadCards | mBoardCards;
+        uint64_t usedCardsMask = 0;
         Hand playerHands[MAX_PLAYERS];
         bool ok = true;
-        for (unsigned i = 0; i < nplayers; ++i) {
+        for (unsigned i = 0; i < multiRangeCount; ++i) {
             unsigned comboIdx = comboDists[i](rng);
-            uint64_t handMask = handMasks[i][comboIdx];
-            if (usedCardsMask & handMask) {
+            const MultiRange::Combo& combo = mMultiRanges[i].combos()[comboIdx];
+            if (usedCardsMask & combo.cardMask) {
                 ok = false;
                 break;
             }
-            playerHands[i] = mEvaluatorHands[i][comboIdx];
-            usedCardsMask |= handMask;
+            for (unsigned j = 0; j < mMultiRanges[i].playerCount(); ++j) {
+                unsigned playerIdx = mMultiRanges[i].players()[j];
+                playerHands[playerIdx] = combo.evalState[j];
+            }
+            usedCardsMask |= combo.cardMask;
         }
 
         // Conflicting holecards, try again.
         if (!ok) {
-            if (++stats.skippedPreflopCombos > 1000000) {
+            if (++stats.skippedPreflopCombos > 1000 && stats.evalCount == 0) {
                 break;
             } continue;
         }
 
         Hand board = fixedBoard;
-        randomizeBoard(board, remainingCards, usedCardsMask, rng, cardDist);
+        randomizeBoard(board, remainingCards, usedCardsMask | mDeadCards | mBoardCards, rng, cardDist);
         evaluateHands(playerHands, nplayers, board, &stats, 1);
 
         // Update periodically.

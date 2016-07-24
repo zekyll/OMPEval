@@ -1,6 +1,7 @@
 #ifndef EQUITYCALCULATOR_H
 #define EQUITYCALCULATOR_H
 
+#include "MultiRange.h"
 #include "Random.h"
 #include "CardRange.h"
 #include "OMPEval.h"
@@ -106,6 +107,7 @@ private:
 
     static const size_t MAX_LOOKUP_SIZE = 1000000;
     static const size_t MAX_COMBOS = 1326;
+    static const size_t MAX_MULTIRANGE_SIZE = 20000;
 
     struct BatchResults
     {
@@ -173,6 +175,8 @@ private:
     std::vector<CardRange> mOriginalHandRanges;
     std::vector<std::vector<std::array<char,2>>> mHandRanges;
     std::vector<std::vector<Hand>> mEvaluatorHands;
+    MultiRange mMultiRanges[MAX_PLAYERS];
+    unsigned mMultiRangeCount;
     uint64_t mDeadCards, mBoardCards;
     HandEvaluator mEval;
     double mStdevTarget;
