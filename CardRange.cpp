@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cassert>
 
+namespace omp {
+
 // Construct empty.
 CardRange::CardRange()
 {
@@ -232,4 +234,6 @@ unsigned CardRange::charToSuit(char c)
         case 'd': return 3;
         default: return ~0u;
     }
+}
+
 }

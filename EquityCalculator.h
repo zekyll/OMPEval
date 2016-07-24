@@ -13,6 +13,8 @@
 #include <array>
 #include <cstdint>
 
+namespace omp {
+
 // Calculates all-in equities in Texas Holdem for given player hand ranges, board cards and dead cards. Supports both
 // exact enumeration and monte carlo simulation.
 class EquityCalculator
@@ -185,5 +187,7 @@ private:
     // Precalculated results for 2 player preflop situations. Uses a sorted array for lowest memory use.
     static const std::vector<uint64_t> PRECALCULATED_2PLAYER_RESULTS;
 };
+
+}
 
 #endif // EQUITYCALCULATOR_H

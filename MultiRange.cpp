@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+namespace omp {
+
 MultiRange::MultiRange()
     : mPlayerCount(0)
 {
@@ -85,4 +87,6 @@ std::vector<MultiRange> MultiRange::joinRanges(
     }
 
     return multiRanges;
+}
+
 }

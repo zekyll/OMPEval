@@ -6,6 +6,8 @@
 #include <array>
 #include <cstdint>
 
+namespace omp {
+
 // Stores a set of unique starting hands for Texas Holdem.
 class CardRange
 {
@@ -55,5 +57,7 @@ private:
 
     std::vector<std::array<char,2>> mCombinations;
 };
+
+}
 
 #endif // CARDRANGE_H

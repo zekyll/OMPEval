@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cstring>
 
+namespace omp {
+
 // Rank multipliers that guarantee a unique key for every rank combination in a 0-7 card hand.
 const unsigned HandEvaluator::RANKS[]{1, 5, 24, 112, 521, 2247, 9244, 30823, 103066, 250154, 667453, 1526359, 3453520};
 // Constants allowing 5-7 cards
@@ -824,3 +826,5 @@ uint32_t HandEvaluator::PERF_HASH_ROW_OFFSETS[] {
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 0, 0, 2702,
 };
+
+}

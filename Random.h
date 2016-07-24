@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <random>
 
+namespace omp {
+
 // Fast 64-bit PRNG with a period of 2^128-1.
 class XorShift128Plus
 {
@@ -232,5 +234,7 @@ private:
     uint64_t mBuffer, mMaxBufferVal, mMask;
     unsigned mBufferUsesLeft, mMaxBufferUses;
 };
+
+}
 
 #endif // RANDOM

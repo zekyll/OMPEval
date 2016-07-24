@@ -5,6 +5,8 @@
 #include <intrin.h>
 #endif
 
+namespace omp {
+
 // Count trailing zeros
 inline unsigned countTrailingZeros(unsigned x)
 {
@@ -35,6 +37,8 @@ inline unsigned bitCount(unsigned long long x)
     #else
     return __builtin_popcount(x);
     #endif
+}
+
 }
 
 #endif // UTIL_H

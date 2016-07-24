@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cmath>
 
+namespace omp {
+
 // Start new calculation and spawn threads.
 bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t boardCards, uint64_t deadCards,
                              bool enumerateAll, double stdevTarget, std::function<void(const Results&)> callback,
@@ -698,3 +700,5 @@ void EquityCalculator::outputLookupTable() const
 //Not used atm.
 const std::vector<uint64_t> EquityCalculator::PRECALCULATED_2PLAYER_RESULTS {
 };
+
+}

@@ -6,6 +6,8 @@
 #include <array>
 #include <cstdint>
 
+namespace omp {
+
 // Combines hole card ranges of multiple players into one big range that includes all valid holecard combinations
 // from the original ranges (aka outer join). Purpose is to improve the efficiency of the rejection sampling method
 // used in monte carlo simulation by eliminating conflicting combos already before the simulation.
@@ -59,5 +61,7 @@ private:
     std::array<unsigned, MAX_PLAYERS> mPlayers;
     unsigned mPlayerCount;
 };
+
+}
 
 #endif // MULTIRANGE_H

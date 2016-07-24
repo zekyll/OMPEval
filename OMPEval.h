@@ -10,6 +10,8 @@
     #define OMP_SSE 0
 #endif
 
+namespace omp {
+
 // Some constants.
 struct Pok
 {
@@ -222,5 +224,7 @@ private:
     static uint16_t FLUSH_LOOKUP[FLUSH_LOOKUP_SIZE];
     static uint32_t PERF_HASH_ROW_OFFSETS[8982 + RECALCULATE_PERF_HASH * 100000];
 };
+
+}
 
 #endif // OMPEVAL_H

@@ -5,6 +5,7 @@
 #include <random>
 
 using namespace std;
+using namespace omp;
 
 // Evaluating hands in sequential order.
 void sequentialEvaluationBenchmark()
