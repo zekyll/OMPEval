@@ -1,7 +1,7 @@
 #ifndef OMPEVAL_H
 #define OMPEVAL_H
 
-#include "util.h"
+#include "Util.h"
 #include <array>
 #include <cstdint>
 #include <xmmintrin.h>
