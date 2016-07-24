@@ -220,57 +220,57 @@ void EquityCalculator::enumerate()
 
         if(!ok) {
             ++stats.skippedPreflopCombos; //TODO fix skipcount
-            continue;
-        }
+        } else {
+            // Transform preflop into canonical form so that suit and player isomoprhism can be detected.
+            uint64_t boardCards = mBoardCards;
+            uint64_t deadCards = mDeadCards;
+            if (useLookup) {
+                // Sort players based on their hand.
+                std::sort(playerHands, playerHands + nplayers, [](const HandWithPlayerIdx& lhs,
+                          HandWithPlayerIdx& rhs){
+                    if (lhs.cards[0] >> 2 != rhs.cards[0] >> 2)
+                        return lhs.cards[0] >> 2 < rhs.cards[0] >> 2;
+                    if (lhs.cards[1] >> 2 != rhs.cards[1] >> 2)
+                        return lhs.cards[1] >> 2 < rhs.cards[1] >> 2;
+                    if ((lhs.cards[0] & 3) != (rhs.cards[0] & 3))
+                        return (lhs.cards[0] & 3) < (rhs.cards[0] & 3);
+                    return (lhs.cards[1] & 3) < (rhs.cards[1] & 3);
+                });
 
-        // Transform preflop into canonical form so that suit and player isomoprhism can be detected.
-        uint64_t boardCards = mBoardCards;
-        uint64_t deadCards = mDeadCards;
-        if (useLookup) {
-            // Sort players based on their hand.
-            std::sort(playerHands, playerHands + nplayers, [](const HandWithPlayerIdx& lhs,
-                      HandWithPlayerIdx& rhs){
-                if (lhs.cards[0] >> 2 != rhs.cards[0] >> 2)
-                    return lhs.cards[0] >> 2 < rhs.cards[0] >> 2;
-                if (lhs.cards[1] >> 2 != rhs.cards[1] >> 2)
-                    return lhs.cards[1] >> 2 < rhs.cards[1] >> 2;
-                if ((lhs.cards[0] & 3) != (rhs.cards[0] & 3))
-                    return (lhs.cards[0] & 3) < (rhs.cards[0] & 3);
-                return (lhs.cards[1] & 3) < (rhs.cards[1] & 3);
-            });
-
-            // Save original player indexes cause we eventually want the results for the original order.
-            for (unsigned i = 0; i < nplayers; ++i)
-                stats.playerIds[i] = playerHands[i].playerIdx;
-
-            // Suit isomorphism.
-            transformSuits(playerHands, nplayers, &boardCards, &deadCards);
-            usedCardsMask = boardCards | deadCards;
-            for (unsigned j = 0; j < nplayers; ++j)
-                usedCardsMask |= (1ull << playerHands[j].cards[0]) | (1ull << playerHands[j].cards[1]);
-        }
-
-        if (useLookup) {
-            // Get cached results if this combo has already been calculated.
-            uint64_t preflopId = calculateUniquePreflopId(playerHands, nplayers);
-            if (lookupResults(preflopId, stats)) {
+                // Save original player indexes cause we eventually want the results for the original order.
                 for (unsigned i = 0; i < nplayers; ++i)
                     stats.playerIds[i] = playerHands[i].playerIdx;
-                stats.evalCount = 0;
-                stats.uniquePreflopCombos = 0;
-            } else {
-                // Do full postflop enumeration.
-                ++stats.uniquePreflopCombos;
-                Hand board = getBoardFromBitmask(boardCards);
-                enumerateBoard(playerHands, nplayers, board, usedCardsMask, &stats);
-                storeResults(preflopId, stats);
+
+                // Suit isomorphism.
+                transformSuits(playerHands, nplayers, &boardCards, &deadCards);
+                usedCardsMask = boardCards | deadCards;
+                for (unsigned j = 0; j < nplayers; ++j)
+                    usedCardsMask |= (1ull << playerHands[j].cards[0]) | (1ull << playerHands[j].cards[1]);
             }
-        } else {
-            ++stats.uniquePreflopCombos;
-            enumerateBoard(playerHands, nplayers, fixedBoard, usedCardsMask, &stats);
+
+            if (useLookup) {
+                // Get cached results if this combo has already been calculated.
+                uint64_t preflopId = calculateUniquePreflopId(playerHands, nplayers);
+                if (lookupResults(preflopId, stats)) {
+                    for (unsigned i = 0; i < nplayers; ++i)
+                        stats.playerIds[i] = playerHands[i].playerIdx;
+                    stats.evalCount = 0;
+                    stats.uniquePreflopCombos = 0;
+                } else {
+                    // Do full postflop enumeration.
+                    ++stats.uniquePreflopCombos;
+                    Hand board = getBoardFromBitmask(boardCards);
+                    enumerateBoard(playerHands, nplayers, board, usedCardsMask, &stats);
+                    storeResults(preflopId, stats);
+                }
+            } else {
+                ++stats.uniquePreflopCombos;
+                enumerateBoard(playerHands, nplayers, fixedBoard, usedCardsMask, &stats);
+            }
         }
 
-        if (stats.evalCount >= 10000 || useLookup) { //TODO combine lookup results here so we don't need update so often
+        //TODO combine lookup results here so we don't need update so often
+        if (stats.evalCount >= 10000 || stats.skippedPreflopCombos >= 10000 || useLookup) {
             updateResults(stats, false);
             stats = BatchResults(nplayers);
             if (mStopped)
