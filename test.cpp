@@ -1,5 +1,5 @@
 
-#include "HandEvaluator.h"
+#include "omp/HandEvaluator.h"
 #include <iostream>
 #include <chrono>
 #include <random>
