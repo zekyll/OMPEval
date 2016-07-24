@@ -171,8 +171,9 @@ void EquityCalculator::enumerate()
     UniqueRng64 urng(preflopCombos);
     Hand fixedBoard = getBoardFromBitmask(mBoardCards);
     libdivide::libdivide_u64_t fastDividers[MAX_PLAYERS];
-    for (unsigned i = 0; i < nplayers; ++i)
-        fastDividers[i] = libdivide::libdivide_u64_gen(mHandRanges[i].size());
+    unsigned multiRangeCount = mMultiRangeCount;
+    for (unsigned i = 0; i < multiRangeCount; ++i)
+        fastDividers[i] = libdivide::libdivide_u64_gen(mMultiRanges[i].combos().size());
 
     // Lookup overhead becomes too much if postflop tree is very small.
     uint64_t postflopCombos = getPostflopCombinationCount();
@@ -195,27 +196,28 @@ void EquityCalculator::enumerate()
         // every combo is evaluated once.
         uint64_t randomizedEnumPos = randomizeOrder ? urng(enumPosition) : enumPosition;
 
-        // Map enumeration index to actual hands.
-        HandWithPlayerIdx playerHands[MAX_PLAYERS];
-        for (unsigned i = 0; i < nplayers; ++i) {
-            uint64_t quotient = libdivide_u64_do(randomizedEnumPos, &fastDividers[i]);
-            uint64_t remainder = randomizedEnumPos - quotient * mHandRanges[i].size();
-            playerHands[i].playerIdx = i;
-            playerHands[i].cards = mHandRanges[i][remainder];
-            randomizedEnumPos = quotient;
-        }
-
-        // Check for conflicting hole cards.
+        // Map enumeration index to actual hands and check duplicate card.
         bool ok = true;
         uint64_t usedCardsMask = mBoardCards | mDeadCards;
-        for (unsigned j = 0; j < nplayers; ++j) {
-            uint64_t handMask = (1ull << playerHands[j].cards[0]) | (1ull << playerHands[j].cards[1]);
-            if (usedCardsMask & handMask) {
+        HandWithPlayerIdx playerHands[MAX_PLAYERS];
+        for (unsigned i = 0; i < multiRangeCount; ++i) {
+            uint64_t quotient = libdivide_u64_do(randomizedEnumPos, &fastDividers[i]);
+            uint64_t remainder = randomizedEnumPos - quotient * mHandRanges[i].size();
+            randomizedEnumPos = quotient;
+
+            const MultiRange::Combo& combo = mMultiRanges[i].combos()[remainder];
+            if (usedCardsMask & combo.cardMask) {
                 ok = false;
                 break;
             }
-            usedCardsMask |= handMask;
+            usedCardsMask |= combo.cardMask;
+            for (unsigned j = 0; j < mMultiRanges[i].playerCount(); ++j) {
+                unsigned playerIdx = mMultiRanges[i].players()[j];
+                playerHands[playerIdx].cards = combo.holeCards[j];
+                playerHands[playerIdx].playerIdx = playerIdx;
+            }
         }
+
         if(!ok) {
             ++stats.skippedPreflopCombos; //TODO fix skipcount
             continue;
@@ -567,8 +569,8 @@ std::pair<uint64_t,uint64_t> EquityCalculator::reserveBatch(unsigned batchCount)
 uint64_t EquityCalculator::getPreflopComboCount()
 {
     uint64_t combos = 1;
-    for (auto &p : mHandRanges)
-        combos *= p.size();
+    for (unsigned i = 0; i < mMultiRangeCount; ++i)
+        combos *= mMultiRanges[i].combos().size();
     return combos;
 }
 
