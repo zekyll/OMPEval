@@ -1,4 +1,4 @@
-#include "OMPEval.h"
+#include "HandEvaluator.h"
 
 #include <vector>
 #include <iostream>

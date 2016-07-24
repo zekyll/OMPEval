@@ -4,7 +4,7 @@
 #include "MultiRange.h"
 #include "Random.h"
 #include "CardRange.h"
-#include "OMPEval.h"
+#include "HandEvaluator.h"
 #include <chrono>
 #include <thread>
 #include <mutex>

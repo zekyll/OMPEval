@@ -1,7 +1,7 @@
 #ifndef MULTIRANGE_H
 #define MULTIRANGE_H
 
-#include "OMPEval.h"
+#include "HandEvaluator.h"
 #include <vector>
 #include <array>
 #include <cstdint>
