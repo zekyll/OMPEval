@@ -3,7 +3,6 @@
 #include "util.h"
 #include "libdivide/libdivide.h"
 #include <iostream>
-#include <random>
 #include <algorithm>
 #include <cmath>
 
@@ -49,7 +48,6 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
     if (threadCount == 0)
         threadCount = std::thread::hardware_concurrency();
     mUnfinishedThreads = threadCount;
-
 
     for (unsigned i = 0; i < threadCount; ++i) {
         mThreads.emplace_back([this,enumerateAll]{
@@ -246,9 +244,7 @@ void EquityCalculator::enumerate()
                 usedCardsMask = boardCards | deadCards;
                 for (unsigned j = 0; j < nplayers; ++j)
                     usedCardsMask |= (1ull << playerHands[j].cards[0]) | (1ull << playerHands[j].cards[1]);
-            }
 
-            if (useLookup) {
                 // Get cached results if this combo has already been calculated.
                 uint64_t preflopId = calculateUniquePreflopId(playerHands, nplayers);
                 if (lookupResults(preflopId, stats)) {

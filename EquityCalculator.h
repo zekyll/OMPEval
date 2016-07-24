@@ -106,7 +106,6 @@ private:
     typedef FastUniformIntDistribution<unsigned> UniformIntDistribution;
 
     static const size_t MAX_LOOKUP_SIZE = 1000000;
-    static const size_t MAX_COMBOS = 1326;
     static const size_t MAX_MULTIRANGE_SIZE = 20000;
 
     struct BatchResults
