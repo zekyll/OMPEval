@@ -1,7 +1,7 @@
 #ifndef RANDOM
 #define RANDOM
 
-#include "libdivide/libdivide.h"
+#include "../libdivide/libdivide.h"
 #include <cstdint>
 #include <random>
 

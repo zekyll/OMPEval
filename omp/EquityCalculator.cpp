@@ -1,7 +1,7 @@
 #include "EquityCalculator.h"
 
 #include "util.h"
-#include "libdivide/libdivide.h"
+#include "../libdivide/libdivide.h"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
