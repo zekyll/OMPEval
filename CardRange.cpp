@@ -29,6 +29,11 @@ CardRange::CardRange(const std::string& text)
     removeDuplicates();
 }
 
+CardRange::CardRange(const char* text)
+    : CardRange(std::string(text))
+{
+}
+
 // Construct from vctor.
 CardRange::CardRange(const std::vector<std::array<char,2>>& combos)
 {

@@ -24,6 +24,7 @@ public:
     // random : all hands
     // Spaces and non-matching characters in the end are ignored. The expressions are case-insensitive.
     CardRange(const std::string& text);
+    CardRange(const char* text);
 
     // Constructs a range from a list of two-card combinations.
     CardRange(const std::vector<std::array<char,2>>& combos);
