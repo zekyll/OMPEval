@@ -19,6 +19,7 @@ const unsigned HandEvaluator::RANKS[]{1, 5, 24, 112, 521, 2247, 9244, 30823, 103
 const unsigned HandEvaluator::FLUSH_RANKS[]{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
 
 Hand Hand::CARDS[]{};
+Hand Hand::EMPTY(0x3333ull << SUITS_SHIFT, 0);
 uint16_t HandEvaluator::LOOKUP[]{};
 uint16_t* HandEvaluator::ORIG_LOOKUP = nullptr;
 uint16_t HandEvaluator::FLUSH_LOOKUP[]{};
@@ -36,7 +37,7 @@ void HandEvaluator::staticInit()
     // Initialize card constants.
     for (unsigned c = 0; c < CARD_COUNT; ++c) {
         unsigned rank = c / 4, suit = c % 4;
-        Hand::CARDS[c] = Hand((1ull << (4 * suit + 32)) + (1ull << Hand::CARD_COUNTER_SHIFT) + RANKS[rank],
+        Hand::CARDS[c] = Hand((1ull << (4 * suit + Hand::SUITS_SHIFT)) + (1ull << Hand::CARD_COUNTER_SHIFT) + RANKS[rank],
                               1ull << (suit * 16 + rank));
     }
 

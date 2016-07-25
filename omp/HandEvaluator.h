@@ -4,10 +4,10 @@
 #include "Util.h"
 #include <array>
 #include <cstdint>
-#include <xmmintrin.h>
-
-#ifndef OMP_SSE
-    #define OMP_SSE 0
+#include <cassert>
+#if OMP_SSE4
+    #include <xmmintrin.h>
+    #include <smmintrin.h>
 #endif
 
 namespace omp {
@@ -39,7 +39,7 @@ struct Pok
 // It is essential when combining hands that exactly one of them was initialized using Hand::empty().
 struct Hand : public Pok
 {
-    // Default constructor Leaves the struct uninitialized for performance reasons.
+    // Default constructor. Leaves the struct uninitialized for performance reasons.
     Hand()
     {
     }
@@ -67,7 +67,7 @@ struct Hand : public Pok
     // Combine with another hand.
     void combine(const Hand& hand2)
     {
-        #if _MSC_VER && OMP_SSE
+        #if OMP_SSE4
         mData = _mm_add_epi64(mData, hand2.mData);
         #else
         mKey += hand2.mKey;
@@ -82,8 +82,8 @@ struct Hand : public Pok
 
     void combineNoFlush(const Hand& hand2)
     {
-        #if _MSC_VER && OMP_SSE
-        mData.m128i_u64[0] += hand2.mData.m128i_u64[0];
+        #if OMP_SSE4
+        mData = _mm_add_epi64(mData, hand2.mData);
         #else
         mKey += hand2.mKey;
         #endif
@@ -92,14 +92,14 @@ struct Hand : public Pok
     // Initialize an empty hand.
     static Hand empty()
     {
-        // Initialize suit counters to 3 so that the flush check bits gets set by the 5th suited card.
-        return {0x333300000000, 0};
+        // Initializes suit counters to 3 so that the flush check bits gets set by the 5th suited card.
+        return EMPTY;
     }
 
     // Returns the suit counters.
     unsigned suits() const
     {
-        return key() >> 32;
+        return key() >> SUITS_SHIFT;
     }
 
     // Number of cards for specific suit.
@@ -111,18 +111,20 @@ struct Hand : public Pok
     // Total number of cards.
     unsigned count() const
     {
-        return mKey >> CARD_COUNTER_SHIFT;
+        return key() >> CARD_COUNTER_SHIFT;
     }
 
 private:
     static Hand CARDS[CARD_COUNT];
-    static const uint64_t FLUSH_CHECK_MASK = 0x888800000000;
+    static Hand EMPTY;
     static const unsigned CARD_COUNTER_SHIFT = 48;
+    static const unsigned SUITS_SHIFT = 32;
+    static const uint64_t FLUSH_CHECK_MASK = 0x8888ull << SUITS_SHIFT;
 
     uint64_t key() const
     {
-        #if _MSC_VER && OMP_SSE
-        return mData.m128i_u64[0];
+        #if OMP_SSE4
+        return _mm_extract_epi64(mData, 1);
         #else
         return mKey;
         #endif
@@ -130,8 +132,8 @@ private:
 
     uint64_t mask() const
     {
-        #if _MSC_VER && OMP_SSE
-        return mData.m128i_u64[1];
+        #if OMP_SSE4
+        return _mm_extract_epi64(mData, 0);
         #else
         return mMask;
         #endif
@@ -139,9 +141,9 @@ private:
 
     Hand(uint64_t key, uint64_t mask)
     {
-        #if _MSC_VER && OMP_SSE
-        mData.m128i_u64[0] = key;
-        mData.m128i_u64[1] = mask;
+        #if OMP_SSE4
+        uint64_t x[2] = {mask, key};
+        mData = _mm_load_si128 ((__m128i*)x);
         #else
         mKey = key;
         mMask = mask;
@@ -151,7 +153,7 @@ private:
     // Bits 0-31: key to non-flush lookup table (linear combination of the rank constants)
     // Bits 32-48: suit counters
     // Bits 64-128: bit mask for all cards (suits are in 16-bit groups).
-    #if _MSC_VER && OMP_SSE
+    #if OMP_SSE4
     __m128i mData;
     #else
     uint64_t mKey;
