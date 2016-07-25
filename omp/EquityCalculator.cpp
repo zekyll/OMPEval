@@ -202,7 +202,7 @@ void EquityCalculator::enumerate()
         HandWithPlayerIdx playerHands[MAX_PLAYERS];
         for (unsigned i = 0; i < multiRangeCount; ++i) {
             uint64_t quotient = libdivide_u64_do(randomizedEnumPos, &fastDividers[i]);
-            uint64_t remainder = randomizedEnumPos - quotient * mHandRanges[i].size();
+            uint64_t remainder = randomizedEnumPos - quotient * mMultiRanges[i].combos().size();
             randomizedEnumPos = quotient;
 
             const MultiRange::Combo& combo = mMultiRanges[i].combos()[remainder];
