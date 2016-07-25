@@ -35,7 +35,7 @@ inline unsigned bitCount(unsigned long long x)
     #elif _MSC_VER
     return __popcnt((unsigned)x) + __popcnt((unsigned)(x >> 32));
     #else
-    return __builtin_popcount(x);
+    return __builtin_popcountll(x);
     #endif
 }
 
