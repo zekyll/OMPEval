@@ -693,9 +693,11 @@ void EquityCalculator::updateResults(const BatchResults& stats, bool threadFinis
     double batchEquity = combineResults(stats);
 
     // Store values for stdev calculation
-    mBatchSum += batchEquity;
-    mBatchSumSqr += batchEquity * batchEquity;
-    mBatchCount += 1;
+    if (!threadFinished) {
+        mBatchSum += batchEquity;
+        mBatchSumSqr += batchEquity * batchEquity;
+        mBatchCount += 1;
+    }
 
     mResults.finished = threadFinished && --mUnfinishedThreads == 0;
 
