@@ -1,4 +1,5 @@
 #include "CardRange.h"
+#include "Constants.h"
 #include <locale>
 #include <algorithm>
 #include <cassert>
@@ -172,7 +173,7 @@ void CardRange::addCombosPlus(unsigned rank1, unsigned rank2, bool suited, bool 
 
 void CardRange::addAll()
 {
-    for (unsigned c1 = 0; c1 < 52; ++c1)
+    for (unsigned c1 = 0; c1 < CARD_COUNT; ++c1)
         for (unsigned c2 = 0; c2 < c1; ++c2)
             addCombo(c1, c2);
 }

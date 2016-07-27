@@ -15,8 +15,6 @@ namespace omp {
 class MultiRange
 {
 public:
-    static const unsigned MAX_PLAYERS = 6;
-
     struct Combo
     {
         uint64_t cardMask;

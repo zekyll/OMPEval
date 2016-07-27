@@ -5,6 +5,7 @@
 #include "Random.h"
 #include "CardRange.h"
 #include "HandEvaluator.h"
+#include "Constants.h"
 #include <chrono>
 #include <thread>
 #include <mutex>
@@ -19,21 +20,18 @@ namespace omp {
 // exact enumeration and monte carlo simulation.
 class EquityCalculator
 {
-    struct BatchResults;
-
 public:
-    static const unsigned MAX_PLAYERS = 6;
 
     struct Results
     {
         // Number of players.
         unsigned players = 0;
         // Equity by player.
-        double equity[6] = {};
+        double equity[MAX_PLAYERS] = {};
         // Wins by player.
-        uint64_t wins[6] = {};
+        uint64_t wins[MAX_PLAYERS] = {};
         // Ties by player, adjusted for equity, 2-way splits = 1/2, 3-way = 1/3 etc..
-        double ties[6] = {};
+        double ties[MAX_PLAYERS] = {};
         // Wins for each combination of winning players. Index ranges from 0 to 2^(n-1), where
         // bit 0 is player 1, bit 1 player 2 etc).
         uint64_t winsByPlayerMask[1 << MAX_PLAYERS] = {};
@@ -107,7 +105,6 @@ private:
     typedef XorShift128Plus Rng;
 
     static const size_t MAX_LOOKUP_SIZE = 1000000;
-    static const size_t MAX_COMBOS = 1326;
     static const size_t MAX_MULTIRANGE_SIZE = 10000;
 
     struct BatchResults
@@ -139,7 +136,6 @@ private:
                         Rng& rng, FastUniformIntDistribution<unsigned,16>& cardDist);
     void evaluateHands(const Hand* playerHands, unsigned nplayers, const Hand& board, BatchResults* stats,
                        unsigned weight, bool flushPossible = true);
-
     void enumerate();
     void enumerateBoard(const HandWithPlayerIdx* playerHands, unsigned nplayers,
                    const Hand& board, uint64_t usedCardsMask, BatchResults* stats);

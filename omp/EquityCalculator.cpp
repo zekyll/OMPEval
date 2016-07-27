@@ -15,9 +15,9 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
 {
     if (handRanges.size() == 0 || handRanges.size() > MAX_PLAYERS)
         return false;
-    if (bitCount(boardCards) > 5)
+    if (bitCount(boardCards) > BOARD_CARDS)
         return false;
-    if (2 * handRanges.size() + bitCount(boardCards | deadCards) + 5 > Pok::CARD_COUNT)
+    if (2 * handRanges.size() + bitCount(boardCards | deadCards) + BOARD_CARDS > CARD_COUNT)
         return false;
 
     mDeadCards = deadCards;
@@ -70,11 +70,11 @@ void EquityCalculator::simulateRegularMonteCarlo()
 {
     unsigned nplayers = (unsigned)mHandRanges.size();
     Hand fixedBoard = getBoardFromBitmask(mBoardCards);
-    unsigned remainingCards = 5 - fixedBoard.count();
+    unsigned remainingCards = BOARD_CARDS - fixedBoard.count();
     BatchResults stats(nplayers);
 
     Rng rng{std::random_device{}()};
-    FastUniformIntDistribution<unsigned,16> cardDist(0, 51);
+    FastUniformIntDistribution<unsigned,16> cardDist(0, CARD_COUNT - 1);
     FastUniformIntDistribution<unsigned,21> comboDists[MAX_PLAYERS];
     unsigned multiRangeCount = mMultiRangeCount;
     for (unsigned i = 0; i < mMultiRangeCount; ++i)
@@ -135,7 +135,7 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
     BatchResults stats(nplayers);
 
     Rng rng{std::random_device{}()};
-    FastUniformIntDistribution<unsigned,16> cardDist(0, 51);
+    FastUniformIntDistribution<unsigned,16> cardDist(0, CARD_COUNT - 1);
     FastUniformIntDistribution<unsigned,21> comboDists[MAX_PLAYERS];
     FastUniformIntDistribution<unsigned,16> mrDist(0, mMultiRangeCount - 1);
     for (unsigned i = 0; i < mMultiRangeCount; ++i)
@@ -382,7 +382,7 @@ void EquityCalculator::enumerateBoard(const HandWithPlayerIdx* playerHands, unsi
         hands[i] = Hand(playerHands[i].cards);
 
     // Take a shortcut when no board cards left to iterate.
-    unsigned remainingCards = 5 - board.count();
+    unsigned remainingCards = BOARD_CARDS - board.count();
     if (remainingCards == 0) {
         evaluateHands(hands, nplayers, board, stats, 1);
         return;
@@ -391,15 +391,15 @@ void EquityCalculator::enumerateBoard(const HandWithPlayerIdx* playerHands, unsi
     // Initialize deck. This also determines the enumeration order. Iterating ranks in descending order is ~5%
     // faster for some reason. Could be better branch prediction, because lower cards affect hand value less. It's
     // unlikely to be due to caching, because reversing the evaluator's rank multipliers has no effect.
-    unsigned deck[Pok::CARD_COUNT];
+    unsigned deck[CARD_COUNT];
     unsigned ndeck = 0;
-    for (unsigned c = Pok::CARD_COUNT; c-- > 0;) {
+    for (unsigned c = CARD_COUNT; c-- > 0;) {
         if(!(usedCardsMask & (1ull << c)))
             deck[ndeck++] = c;
     }
 
     // Calculate the maximum card count for each suit that any player can have after holecards and fixed board cards.
-    unsigned suitCounts[Pok::SUIT_COUNT] = {};
+    unsigned suitCounts[SUIT_COUNT] = {};
     for (unsigned i = 0; i < nplayers; ++i) {
         if ((playerHands[i].cards[0] & 3) == (playerHands[i].cards[1] & 3)) {
             suitCounts[playerHands[i].cards[0] & 3] = std::max(2u, suitCounts[playerHands[i].cards[0] & 3]);
@@ -408,7 +408,7 @@ void EquityCalculator::enumerateBoard(const HandWithPlayerIdx* playerHands, unsi
             suitCounts[playerHands[i].cards[1] & 3] = std::max(1u, suitCounts[playerHands[i].cards[1] & 3]);
         }
     }
-    for (unsigned i = 0; i < Pok::SUIT_COUNT; ++i)
+    for (unsigned i = 0; i < SUIT_COUNT; ++i)
         suitCounts[i] += board.suitCount(i);
 
     enumerateBoardRec(hands, nplayers, stats, board, deck, ndeck, suitCounts, remainingCards, 0, 1);
@@ -563,28 +563,28 @@ void EquityCalculator::storeResults(uint64_t preflopId, const BatchResults& resu
 unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsigned nplayers,
                                           uint64_t* boardCards, uint64_t* deadCards)
 {
-    unsigned transform[Pok::SUIT_COUNT] = {~0u, ~0u, ~0u, ~0u};
+    unsigned transform[SUIT_COUNT] = {~0u, ~0u, ~0u, ~0u};
     unsigned suitCount = 0;
 
     //TODO transform fixed cards before main enumeration loop.
 
-    for (unsigned i = 0; i < Pok::CARD_COUNT; ++i) {
+    for (unsigned i = 0; i < CARD_COUNT; ++i) {
         if ((*boardCards >> i) & 1) {
-            unsigned suit = i & Pok::SUIT_MASK;
+            unsigned suit = i & SUIT_MASK;
             if (transform[suit] == ~0)
                 transform[suit] = suitCount++;
-            unsigned newCard = (i & Pok::RANK_MASK) | transform[suit];
+            unsigned newCard = (i & RANK_MASK) | transform[suit];
             *boardCards ^= 1ull << i;
             *boardCards |= 1ull << newCard;
         }
     }
 
-    for (unsigned i = 0; i < Pok::CARD_COUNT; ++i) {
+    for (unsigned i = 0; i < CARD_COUNT; ++i) {
         if ((*deadCards >> i) & 1) {
-            unsigned suit = i & Pok::SUIT_MASK;
+            unsigned suit = i & SUIT_MASK;
             if (transform[suit] == ~0)
                 transform[suit] = suitCount++;
-            unsigned newCard = (i & Pok::RANK_MASK) | transform[suit];
+            unsigned newCard = (i & RANK_MASK) | transform[suit];
             *deadCards ^= 1ull << i;
             *deadCards |= 1ull << newCard;
         }
@@ -593,10 +593,10 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
     // Holecards need to be handled after any fixed cards, because the lookup is only based on them.
     for (unsigned i = 0; i < nplayers; ++i) {
         for (char& c : playerHands[i].cards) {
-            unsigned suit = c & Pok::SUIT_MASK;
+            unsigned suit = c & SUIT_MASK;
             if (transform[suit] == ~0)
                 transform[suit] = suitCount++;
-            c = (c & Pok::RANK_MASK) | transform[suit];
+            c = (c & RANK_MASK) | transform[suit];
         }
     }
 
@@ -609,7 +609,7 @@ uint64_t EquityCalculator::calculateUniquePreflopId(const HandWithPlayerIdx* pla
     uint64_t preflopId = 0;
     // Basically we just map the preflop to a number in base 1327, where each digit represents a hand.
     for (unsigned i = 0; i < nplayers; ++i) {
-        preflopId *= (Pok::CARD_COUNT * (Pok::CARD_COUNT - 1) >> 1) + 1; //1327
+        preflopId *= (CARD_COUNT * (CARD_COUNT - 1) >> 1) + 1; //1327
         auto h = playerHands[i].cards;
         if (h[0] < h[1])
             std::swap(h[0], h[1]);
@@ -621,7 +621,7 @@ uint64_t EquityCalculator::calculateUniquePreflopId(const HandWithPlayerIdx* pla
 Hand EquityCalculator::getBoardFromBitmask(uint64_t cards)
 {
     Hand board = Hand::empty();
-    for (unsigned c = 0; c < Pok::CARD_COUNT; ++c) {
+    for (unsigned c = 0; c < CARD_COUNT; ++c) {
         if (cards & (1ull << c))
             board.combine(c);
     }
@@ -670,11 +670,11 @@ uint64_t EquityCalculator::getPreflopComboCount()
 // of undealt board cards.
 uint64_t EquityCalculator::getPostflopCombinationCount()
 {
-    unsigned cardsInDeck = Pok::CARD_COUNT;
+    unsigned cardsInDeck = CARD_COUNT;
     cardsInDeck -= bitCount(mDeadCards | mBoardCards);
     cardsInDeck -= 2 * (unsigned)mHandRanges.size();
-    assert(bitCount(mBoardCards) <= 5);
-    unsigned boardCardsRemaining = 5 - bitCount(mBoardCards);
+    assert(bitCount(mBoardCards) <= BOARD_CARDS);
+    unsigned boardCardsRemaining = BOARD_CARDS - bitCount(mBoardCards);
     uint64_t postflopCombos = 1;
     for (unsigned i = 0; i < boardCardsRemaining; ++i)
         postflopCombos *= cardsInDeck - i;
