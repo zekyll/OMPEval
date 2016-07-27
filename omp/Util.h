@@ -6,7 +6,7 @@
 #endif
 
 #ifndef OMP_SSE4
-#define OMP_SSE4 (__SSE4_1__ || (_MSC_VER && _M_X64))
+#define OMP_SSE4 (__SSE4_1__ || (_MSC_VER && _M_X64 && !_DEBUG))
 #endif
 
 namespace omp {
