@@ -107,7 +107,8 @@ private:
     typedef XorShift128Plus Rng;
 
     static const size_t MAX_LOOKUP_SIZE = 1000000;
-    static const size_t MAX_MULTIRANGE_SIZE = 20000;
+    static const size_t MAX_COMBOS = 1326;
+    static const size_t MAX_MULTIRANGE_SIZE = 10000;
 
     struct BatchResults
     {
@@ -130,7 +131,10 @@ private:
         unsigned playerIdx;
     };
 
-    void simulate();
+    void simulateRegularMonteCarlo();
+    void simulateRandomWalkMonteCarlo();
+    bool randomizeHoleCards(uint64_t &usedCardsMask, unsigned* comboIndexes, Hand* playerHands,
+                            Rng& rng, FastUniformIntDistribution<unsigned,21>*comboDists);
     void randomizeBoard(Hand& board, unsigned remainingCards, uint64_t usedCardsMask,
                         Rng& rng, FastUniformIntDistribution<unsigned,16>& cardDist);
     void evaluateHands(const Hand* playerHands, unsigned nplayers, const Hand& board, BatchResults* stats,

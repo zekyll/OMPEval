@@ -1,5 +1,7 @@
 #include "MultiRange.h"
 
+#include <random>
+#include <algorithm>
 #include <cassert>
 
 namespace omp {
@@ -87,6 +89,12 @@ std::vector<MultiRange> MultiRange::joinRanges(
     }
 
     return multiRanges;
+}
+
+void MultiRange::shuffle()
+{
+    std::mt19937_64 rng(std::random_device{}());
+    std::shuffle(mCombos.begin(), mCombos.end(), rng);
 }
 
 }

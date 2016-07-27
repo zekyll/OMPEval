@@ -40,6 +40,9 @@ public:
     static std::vector<MultiRange> joinRanges(const std::vector<std::vector<std::array<char,2>>>& holeCardRanges,
                                               size_t maxSize);
 
+    // Randomize order of combos (good for random walk simulation).
+    void shuffle();
+
     unsigned playerCount() const
     {
         return mPlayerCount;

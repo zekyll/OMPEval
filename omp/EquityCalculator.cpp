@@ -28,6 +28,8 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
     for (unsigned i = 0; i < multiRanges.size(); ++i) {
         if (multiRanges[i].combos().size() == 0)
             return false;
+        if (!enumerateAll)
+            multiRanges[i].shuffle();
         mMultiRanges[i] = multiRanges[i];
     }
     mMultiRangeCount = multiRanges.size();
@@ -56,7 +58,7 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
             if (enumerateAll)
                 enumerate();
             else
-                simulate();
+                simulateRandomWalkMonteCarlo();
         });
     }
 
@@ -64,7 +66,7 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
 }
 
 // Main method for monte carlo simulation.
-void EquityCalculator::simulate()
+void EquityCalculator::simulateRegularMonteCarlo()
 {
     unsigned nplayers = (unsigned)mHandRanges.size();
     Hand fixedBoard = getBoardFromBitmask(mBoardCards);
@@ -118,6 +120,98 @@ void EquityCalculator::simulate()
     }
 
     updateResults(stats, true);
+}
+
+// Monte carlo simulation using a random walk. On each iteration a random player is chosen and the next feasible
+// combo is picked for that player. To prove that each preflop really has equal probability of being
+// visited the preflop combinations can be thought of as a directed k-regular graph. The transition probability
+// matrix P then has k non-zero values on each row and column, and all non-zero elements have value of 1/k.
+// It is easy to see that (1,1,...,1) * P = (1,1,...,1), i.e. (1,1,...,1) is a stable distribution.
+void EquityCalculator::simulateRandomWalkMonteCarlo()
+{
+    unsigned nplayers = (unsigned)mHandRanges.size();
+    Hand fixedBoard = getBoardFromBitmask(mBoardCards);
+    unsigned remainingCards = 5 - fixedBoard.count();
+    BatchResults stats(nplayers);
+
+    Rng rng{std::random_device{}()};
+    FastUniformIntDistribution<unsigned,16> cardDist(0, 51);
+    FastUniformIntDistribution<unsigned,21> comboDists[MAX_PLAYERS];
+    FastUniformIntDistribution<unsigned,16> mrDist(0, mMultiRangeCount - 1);
+    for (unsigned i = 0; i < mMultiRangeCount; ++i)
+        comboDists[i] = FastUniformIntDistribution<unsigned,21>(0, (unsigned)mMultiRanges[i].combos().size() - 1);
+
+    uint64_t usedCardsMask;
+    Hand playerHands[MAX_PLAYERS];
+    unsigned comboIndexes[MAX_PLAYERS];
+
+    // Set initial state.
+    if (randomizeHoleCards(usedCardsMask, comboIndexes, playerHands, rng, comboDists)) {
+        // Loop until stopped.
+        for (;;) {
+            // Randomize board and evaluate for current holecards.
+            Hand board = fixedBoard;
+            randomizeBoard(board, remainingCards, usedCardsMask | mDeadCards | mBoardCards, rng, cardDist);
+            evaluateHands(playerHands, nplayers, board, &stats, 1);
+
+            // Update results periodically.
+            if ((stats.evalCount & 0xfff) == 0) {
+                updateResults(stats, false);
+                if (mStopped)
+                    break;
+                stats = BatchResults(nplayers);
+                // Occasionally do a full randomization, because in some rare cases the random walk might
+                // not be able to visit all preflop combinations by changing just one hand at a time.
+                // This shouldn't happen if MAX_MULTIRANGE_SIZE is big enough, but extra randomization never hurts.
+                if (!randomizeHoleCards(usedCardsMask, comboIndexes, playerHands, rng, comboDists))
+                    break;
+            }
+
+            // Choose random player and iterate to next valid combo. If current combo is the only one that is valid
+            // then will loop back to itself.
+            unsigned mrIdx = mrDist(rng);
+            usedCardsMask -= mMultiRanges[mrIdx].combos()[comboIndexes[mrIdx]].cardMask;
+            uint64_t mask = 0;
+            do {
+                if (++comboIndexes[mrIdx] == mMultiRanges[mrIdx].combos().size())
+                    comboIndexes[mrIdx] = 0;
+                mask = mMultiRanges[mrIdx].combos()[comboIndexes[mrIdx]].cardMask;
+            } while (mask & usedCardsMask);
+            usedCardsMask |= mask;
+            for (unsigned i = 0; i < mMultiRanges[mrIdx].playerCount(); ++i) {
+                unsigned playerIdx = mMultiRanges[mrIdx].players()[i];
+                playerHands[playerIdx] = mMultiRanges[mrIdx].combos()[comboIndexes[mrIdx]].evalState[i];
+            }
+        }
+    }
+
+    updateResults(stats, true);
+}
+
+// Randomize holecards using rejection sampling. Returns false if maximum attempts was reached.
+bool EquityCalculator::randomizeHoleCards(uint64_t &usedCardsMask, unsigned* comboIndexes, Hand* playerHands,
+                                          Rng& rng, FastUniformIntDistribution<unsigned,21>* comboDists)
+{
+    unsigned n = 0;
+    for(bool ok = false; !ok && n < 1000; ++n) {
+        ok = true;
+        usedCardsMask = 0;
+        for (unsigned i = 0; i < mMultiRangeCount; ++i) {
+            unsigned comboIdx = comboDists[i](rng);
+            comboIndexes[i] = comboIdx;
+            const MultiRange::Combo& combo = mMultiRanges[i].combos()[comboIdx];
+            if (usedCardsMask & combo.cardMask) {
+                ok = false;
+                break;
+            }
+            for (unsigned j = 0; j < mMultiRanges[i].playerCount(); ++j) {
+                unsigned playerIdx = mMultiRanges[i].players()[j];
+                playerHands[playerIdx] = combo.evalState[j];
+            }
+            usedCardsMask |= combo.cardMask;
+        }
+    }
+    return n < 1000;
 }
 
 // Naive method of randomizing the board by using rejection sampling.
