@@ -1,5 +1,5 @@
-#ifndef MULTIRANGE_H
-#define MULTIRANGE_H
+#ifndef COMBINED_RANGE_H
+#define COMBINED_RANGE_H
 
 #include "HandEvaluator.h"
 #include <vector>
@@ -12,30 +12,30 @@ namespace omp {
 // from the original ranges (aka outer join). Purpose is to improve the efficiency of the rejection sampling method
 // used in monte carlo simulation by eliminating conflicting combos already before the simulation.
 // This is necessary with highly overlapping ranges like AK vs AK vs AK vs AK.
-class MultiRange
+class CombinedRange
 {
 public:
     struct Combo
     {
         uint64_t cardMask;
         std::array<uint8_t,2> holeCards[MAX_PLAYERS];
-        Hand evalState[MAX_PLAYERS];
+        Hand evalHands[MAX_PLAYERS];
     };
 
     // Default constructor (0 players).
-    MultiRange();
+    CombinedRange();
 
     // Create a range for one player.
-    MultiRange(unsigned playerIdx, const std::vector<std::array<uint8_t,2>>& holeCards);
+    CombinedRange(unsigned playerIdx, const std::vector<std::array<uint8_t,2>>& holeCards);
 
     // Combine with another range and return the result.
-    MultiRange join(const MultiRange& range2) const;
+    CombinedRange join(const CombinedRange& range2) const;
 
     // Calculate the size of the joined range without actually doing it.
-    uint64_t estimateJoinSize(const MultiRange& range2) const;
+    uint64_t estimateJoinSize(const CombinedRange& range2) const;
 
     // Takes multiple ranges and combines as many of them as possible, while keeping range sizes below the limit.
-    static std::vector<MultiRange> joinRanges(const std::vector<std::vector<std::array<uint8_t,2>>>& holeCardRanges,
+    static std::vector<CombinedRange> joinRanges(const std::vector<std::vector<std::array<uint8_t,2>>>& holeCardRanges,
                                               size_t maxSize);
 
     // Randomize order of combos (good for random walk simulation).
@@ -65,4 +65,4 @@ private:
 
 }
 
-#endif // MULTIRANGE_H
+#endif // COMBINED_RANGE_H

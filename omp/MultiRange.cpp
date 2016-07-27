@@ -6,12 +6,12 @@
 
 namespace omp {
 
-MultiRange::MultiRange()
+CombinedRange::CombinedRange()
     : mPlayerCount(0)
 {
 }
 
-MultiRange::MultiRange(unsigned playerIdx, const std::vector<std::array<uint8_t,2>>& holeCards)
+CombinedRange::CombinedRange(unsigned playerIdx, const std::vector<std::array<uint8_t,2>>& holeCards)
 {
     mPlayerCount = 1;
     mPlayers[0] = playerIdx;
@@ -21,11 +21,11 @@ MultiRange::MultiRange(unsigned playerIdx, const std::vector<std::array<uint8_t,
     }
 }
 
-MultiRange MultiRange::join(const MultiRange& range2) const
+CombinedRange CombinedRange::join(const CombinedRange& range2) const
 {
     omp_assert(mPlayerCount + range2.mPlayerCount <= MAX_PLAYERS);
 
-    MultiRange newRange;
+    CombinedRange newRange;
     newRange.mPlayerCount = mPlayerCount + range2.mPlayerCount;
     std::copy(mPlayers.begin(), mPlayers.begin() + mPlayerCount, newRange.mPlayers.begin());
     std::copy(range2.mPlayers.begin(), range2.mPlayers.begin() + range2.mPlayerCount,
@@ -40,7 +40,7 @@ MultiRange MultiRange::join(const MultiRange& range2) const
             std::copy(c1.holeCards, c1.holeCards + mPlayerCount, c.holeCards);
             std::copy(c2.holeCards, c2.holeCards + range2.mPlayerCount, c.holeCards + mPlayerCount);
             for (unsigned i = 0; i < newRange.mPlayerCount; ++i)
-                c.evalState[i] = Hand(c.holeCards[i]);
+                c.evalHands[i] = Hand(c.holeCards[i]);
             newRange.mCombos.push_back(c);
         }
     }
@@ -48,7 +48,7 @@ MultiRange MultiRange::join(const MultiRange& range2) const
     return newRange;
 }
 
-uint64_t MultiRange::estimateJoinSize(const MultiRange& range2) const
+uint64_t CombinedRange::estimateJoinSize(const CombinedRange& range2) const
 {
     omp_assert(mPlayerCount + range2.mPlayerCount <= MAX_PLAYERS);
     uint64_t size = 0;
@@ -62,36 +62,36 @@ uint64_t MultiRange::estimateJoinSize(const MultiRange& range2) const
     return size;
 }
 
-std::vector<MultiRange> MultiRange::joinRanges(
+std::vector<CombinedRange> CombinedRange::joinRanges(
         const std::vector<std::vector<std::array<uint8_t,2>>>& holeCardRanges, size_t maxSize)
 {
-    std::vector<MultiRange> multiRanges;
+    std::vector<CombinedRange> combinedRanges;
     for (unsigned i = 0; i < holeCardRanges.size(); ++i)
-        multiRanges.emplace_back(MultiRange{i, holeCardRanges[i]});
+        combinedRanges.emplace_back(CombinedRange{i, holeCardRanges[i]});
 
     for (;;) {
         uint64_t bestSize = ~0ull;
         unsigned besti, bestj;
-        for (unsigned i = 0; i < multiRanges.size(); ++i) {
+        for (unsigned i = 0; i < combinedRanges.size(); ++i) {
             for (unsigned j = 0; j < i; ++j) {
-                uint64_t newSize = multiRanges[i].estimateJoinSize(multiRanges[j]);
+                uint64_t newSize = combinedRanges[i].estimateJoinSize(combinedRanges[j]);
                 if (newSize < bestSize)
                     besti = i, bestj = j, bestSize = newSize;
             }
         }
 
         if (bestSize <= maxSize) {
-            multiRanges[besti] = multiRanges[besti].join(multiRanges[bestj]);
-            multiRanges.erase(multiRanges.begin() + bestj);
+            combinedRanges[besti] = combinedRanges[besti].join(combinedRanges[bestj]);
+            combinedRanges.erase(combinedRanges.begin() + bestj);
         } else {
             break;
         }
     }
 
-    return multiRanges;
+    return combinedRanges;
 }
 
-void MultiRange::shuffle()
+void CombinedRange::shuffle()
 {
     std::mt19937_64 rng(std::random_device{}());
     std::shuffle(mCombos.begin(), mCombos.end(), rng);

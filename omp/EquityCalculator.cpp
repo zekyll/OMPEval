@@ -20,25 +20,22 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
     if (2 * handRanges.size() + bitCount(boardCards | deadCards) + BOARD_CARDS > CARD_COUNT)
         return false;
 
+    // Set up card ranges.
     mDeadCards = deadCards;
     mBoardCards = boardCards;
     mOriginalHandRanges = handRanges;
     mHandRanges = removeInvalidCombos(handRanges, mDeadCards | mBoardCards);
-    std::vector<MultiRange> multiRanges = MultiRange::joinRanges(mHandRanges, MAX_MULTIRANGE_SIZE);
-    for (unsigned i = 0; i < multiRanges.size(); ++i) {
-        if (multiRanges[i].combos().size() == 0)
+    std::vector<CombinedRange> combinedRanges = CombinedRange::joinRanges(mHandRanges, MAX_COMBINED_RANGE_SIZE);
+    for (unsigned i = 0; i < combinedRanges.size(); ++i) {
+        if (combinedRanges[i].combos().size() == 0)
             return false;
         if (!enumerateAll)
-            multiRanges[i].shuffle();
-        mMultiRanges[i] = multiRanges[i];
+            combinedRanges[i].shuffle();
+        mCombinedRanges[i] = combinedRanges[i];
     }
-    mMultiRangeCount = multiRanges.size();
-    mEvaluatorHands.resize(mHandRanges.size());
-    for (size_t i = 0; i < mHandRanges.size(); ++i) {
-        for (auto& h: mHandRanges[i])
-            mEvaluatorHands[i].emplace_back(h);
-    }
+    mCombinedRangeCount = (unsigned)combinedRanges.size();
 
+    // Set up simulation settings.
     mEnumPosition = 0;
     mBatchSum = mBatchSumSqr = mBatchCount = 0;
     mResults.players = (unsigned)handRanges.size();
@@ -53,6 +50,7 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
         threadCount = std::thread::hardware_concurrency();
     mUnfinishedThreads = threadCount;
 
+    // Start threads.
     for (unsigned i = 0; i < threadCount; ++i) {
         mThreads.emplace_back([this,enumerateAll]{
             if (enumerateAll)
@@ -62,10 +60,11 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
         });
     }
 
+    // Started successfully.
     return true;
 }
 
-// Main method for monte carlo simulation.
+// Regular monte carlo simulation.
 void EquityCalculator::simulateRegularMonteCarlo()
 {
     unsigned nplayers = (unsigned)mHandRanges.size();
@@ -76,25 +75,25 @@ void EquityCalculator::simulateRegularMonteCarlo()
     Rng rng{std::random_device{}()};
     FastUniformIntDistribution<unsigned,16> cardDist(0, CARD_COUNT - 1);
     FastUniformIntDistribution<unsigned,21> comboDists[MAX_PLAYERS];
-    unsigned multiRangeCount = mMultiRangeCount;
-    for (unsigned i = 0; i < mMultiRangeCount; ++i)
-        comboDists[i] = FastUniformIntDistribution<unsigned,21>(0, (unsigned)mMultiRanges[i].combos().size() - 1);
+    unsigned combinedRangeCount = mCombinedRangeCount;
+    for (unsigned i = 0; i < mCombinedRangeCount; ++i)
+        comboDists[i] = FastUniformIntDistribution<unsigned,21>(0, (unsigned)mCombinedRanges[i].combos().size() - 1);
 
     for (;;) {
         // Randomize hands and check for duplicate holecards.
         uint64_t usedCardsMask = 0;
         Hand playerHands[MAX_PLAYERS];
         bool ok = true;
-        for (unsigned i = 0; i < multiRangeCount; ++i) {
+        for (unsigned i = 0; i < combinedRangeCount; ++i) {
             unsigned comboIdx = comboDists[i](rng);
-            const MultiRange::Combo& combo = mMultiRanges[i].combos()[comboIdx];
+            const CombinedRange::Combo& combo = mCombinedRanges[i].combos()[comboIdx];
             if (usedCardsMask & combo.cardMask) {
                 ok = false;
                 break;
             }
-            for (unsigned j = 0; j < mMultiRanges[i].playerCount(); ++j) {
-                unsigned playerIdx = mMultiRanges[i].players()[j];
-                playerHands[playerIdx] = combo.evalState[j];
+            for (unsigned j = 0; j < mCombinedRanges[i].playerCount(); ++j) {
+                unsigned playerIdx = mCombinedRanges[i].players()[j];
+                playerHands[playerIdx] = combo.evalHands[j];
             }
             usedCardsMask |= combo.cardMask;
         }
@@ -137,9 +136,9 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
     Rng rng{std::random_device{}()};
     FastUniformIntDistribution<unsigned,16> cardDist(0, CARD_COUNT - 1);
     FastUniformIntDistribution<unsigned,21> comboDists[MAX_PLAYERS];
-    FastUniformIntDistribution<unsigned,16> mrDist(0, mMultiRangeCount - 1);
-    for (unsigned i = 0; i < mMultiRangeCount; ++i)
-        comboDists[i] = FastUniformIntDistribution<unsigned,21>(0, (unsigned)mMultiRanges[i].combos().size() - 1);
+    FastUniformIntDistribution<unsigned,16> mrDist(0, mCombinedRangeCount - 1);
+    for (unsigned i = 0; i < mCombinedRangeCount; ++i)
+        comboDists[i] = FastUniformIntDistribution<unsigned,21>(0, (unsigned)mCombinedRanges[i].combos().size() - 1);
 
     uint64_t usedCardsMask;
     Hand playerHands[MAX_PLAYERS];
@@ -162,7 +161,7 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
                 stats = BatchResults(nplayers);
                 // Occasionally do a full randomization, because in some rare cases the random walk might
                 // not be able to visit all preflop combinations by changing just one hand at a time.
-                // This shouldn't happen if MAX_MULTIRANGE_SIZE is big enough, but extra randomization never hurts.
+                // This shouldn't happen if MAX_COMBINED_RANGE_SIZE is big enough, but extra randomization never hurts.
                 if (!randomizeHoleCards(usedCardsMask, comboIndexes, playerHands, rng, comboDists))
                     break;
             }
@@ -170,17 +169,17 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
             // Choose random player and iterate to next valid combo. If current combo is the only one that is valid
             // then will loop back to itself.
             unsigned mrIdx = mrDist(rng);
-            usedCardsMask -= mMultiRanges[mrIdx].combos()[comboIndexes[mrIdx]].cardMask;
+            usedCardsMask -= mCombinedRanges[mrIdx].combos()[comboIndexes[mrIdx]].cardMask;
             uint64_t mask = 0;
             do {
-                if (++comboIndexes[mrIdx] == mMultiRanges[mrIdx].combos().size())
+                if (++comboIndexes[mrIdx] == mCombinedRanges[mrIdx].combos().size())
                     comboIndexes[mrIdx] = 0;
-                mask = mMultiRanges[mrIdx].combos()[comboIndexes[mrIdx]].cardMask;
+                mask = mCombinedRanges[mrIdx].combos()[comboIndexes[mrIdx]].cardMask;
             } while (mask & usedCardsMask);
             usedCardsMask |= mask;
-            for (unsigned i = 0; i < mMultiRanges[mrIdx].playerCount(); ++i) {
-                unsigned playerIdx = mMultiRanges[mrIdx].players()[i];
-                playerHands[playerIdx] = mMultiRanges[mrIdx].combos()[comboIndexes[mrIdx]].evalState[i];
+            for (unsigned i = 0; i < mCombinedRanges[mrIdx].playerCount(); ++i) {
+                unsigned playerIdx = mCombinedRanges[mrIdx].players()[i];
+                playerHands[playerIdx] = mCombinedRanges[mrIdx].combos()[comboIndexes[mrIdx]].evalHands[i];
             }
         }
     }
@@ -188,7 +187,7 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
     updateResults(stats, true);
 }
 
-// Randomize holecards using rejection sampling. Returns false if maximum attempts was reached.
+// Randomize holecards using rejection sampling. Returns false if maximum number of attempts was reached.
 bool EquityCalculator::randomizeHoleCards(uint64_t &usedCardsMask, unsigned* comboIndexes, Hand* playerHands,
                                           Rng& rng, FastUniformIntDistribution<unsigned,21>* comboDists)
 {
@@ -196,17 +195,17 @@ bool EquityCalculator::randomizeHoleCards(uint64_t &usedCardsMask, unsigned* com
     for(bool ok = false; !ok && n < 1000; ++n) {
         ok = true;
         usedCardsMask = 0;
-        for (unsigned i = 0; i < mMultiRangeCount; ++i) {
+        for (unsigned i = 0; i < mCombinedRangeCount; ++i) {
             unsigned comboIdx = comboDists[i](rng);
             comboIndexes[i] = comboIdx;
-            const MultiRange::Combo& combo = mMultiRanges[i].combos()[comboIdx];
+            const CombinedRange::Combo& combo = mCombinedRanges[i].combos()[comboIdx];
             if (usedCardsMask & combo.cardMask) {
                 ok = false;
                 break;
             }
-            for (unsigned j = 0; j < mMultiRanges[i].playerCount(); ++j) {
-                unsigned playerIdx = mMultiRanges[i].players()[j];
-                playerHands[playerIdx] = combo.evalState[j];
+            for (unsigned j = 0; j < mCombinedRanges[i].playerCount(); ++j) {
+                unsigned playerIdx = mCombinedRanges[i].players()[j];
+                playerHands[playerIdx] = combo.evalHands[j];
             }
             usedCardsMask |= combo.cardMask;
         }
@@ -257,15 +256,15 @@ void EquityCalculator::evaluateHands(const Hand* playerHands, unsigned nplayers,
 void EquityCalculator::enumerate()
 {
     uint64_t enumPosition = 0, enumEnd = 0;
-    uint64_t preflopCombos = getPreflopComboCount();
+    uint64_t preflopCombos = getPreflopCombinationCount();
     unsigned nplayers = (unsigned)mHandRanges.size();
     BatchResults stats(nplayers);
     UniqueRng64 urng(preflopCombos);
     Hand fixedBoard = getBoardFromBitmask(mBoardCards);
     libdivide::libdivide_u64_t fastDividers[MAX_PLAYERS];
-    unsigned multiRangeCount = mMultiRangeCount;
-    for (unsigned i = 0; i < multiRangeCount; ++i)
-        fastDividers[i] = libdivide::libdivide_u64_gen(mMultiRanges[i].combos().size());
+    unsigned combinedRangeCount = mCombinedRangeCount;
+    for (unsigned i = 0; i < combinedRangeCount; ++i)
+        fastDividers[i] = libdivide::libdivide_u64_gen(mCombinedRanges[i].combos().size());
 
     // Lookup overhead becomes too much if postflop tree is very small.
     uint64_t postflopCombos = getPostflopCombinationCount();
@@ -292,19 +291,19 @@ void EquityCalculator::enumerate()
         bool ok = true;
         uint64_t usedCardsMask = mBoardCards | mDeadCards;
         HandWithPlayerIdx playerHands[MAX_PLAYERS];
-        for (unsigned i = 0; i < multiRangeCount; ++i) {
+        for (unsigned i = 0; i < combinedRangeCount; ++i) {
             uint64_t quotient = libdivide_u64_do(randomizedEnumPos, &fastDividers[i]);
-            uint64_t remainder = randomizedEnumPos - quotient * mMultiRanges[i].combos().size();
+            uint64_t remainder = randomizedEnumPos - quotient * mCombinedRanges[i].combos().size();
             randomizedEnumPos = quotient;
 
-            const MultiRange::Combo& combo = mMultiRanges[i].combos()[remainder];
+            const CombinedRange::Combo& combo = mCombinedRanges[i].combos()[remainder];
             if (usedCardsMask & combo.cardMask) {
                 ok = false;
                 break;
             }
             usedCardsMask |= combo.cardMask;
-            for (unsigned j = 0; j < mMultiRanges[i].playerCount(); ++j) {
-                unsigned playerIdx = mMultiRanges[i].players()[j];
+            for (unsigned j = 0; j < mCombinedRanges[i].playerCount(); ++j) {
+                unsigned playerIdx = mCombinedRanges[i].players()[j];
                 playerHands[playerIdx].cards = combo.holeCards[j];
                 playerHands[playerIdx].playerIdx = playerIdx;
             }
@@ -645,7 +644,7 @@ std::pair<uint64_t,uint64_t> EquityCalculator::reserveBatch(unsigned batchCount)
 {
     std::lock_guard<std::mutex> lock(mMutex);
 
-    uint64_t totalBatchCount = getPreflopComboCount();
+    uint64_t totalBatchCount = getPreflopCombinationCount();
     uint64_t start = mEnumPosition;
     uint64_t end = std::min<uint64_t>(totalBatchCount, mEnumPosition + batchCount);
     mEnumPosition = end;
@@ -654,11 +653,11 @@ std::pair<uint64_t,uint64_t> EquityCalculator::reserveBatch(unsigned batchCount)
 }
 
 // Number of different preflops with given hand ranges, assuming no conflicts between players' hands.
-uint64_t EquityCalculator::getPreflopComboCount()
+uint64_t EquityCalculator::getPreflopCombinationCount()
 {
     uint64_t combos = 1;
-    for (unsigned i = 0; i < mMultiRangeCount; ++i)
-        combos *= mMultiRanges[i].combos().size();
+    for (unsigned i = 0; i < mCombinedRangeCount; ++i)
+        combos *= mCombinedRanges[i].combos().size();
     return combos;
 }
 
@@ -710,12 +709,12 @@ void EquityCalculator::updateResults(const BatchResults& stats, bool threadFinis
                                    * (mBatchSum / mBatchCount)) / sqrt(mBatchCount);
         mResults.stdevPerHand = mResults.stdev * std::sqrt(mResults.hands);
         if (mResults.enumerateAll) {
-            mResults.progress = (double)mEnumPosition / getPreflopComboCount();
+            mResults.progress = (double)mEnumPosition / getPreflopCombinationCount();
         } else {
             double estimatedHands = std::pow(mResults.stdev / mStdevTarget, 2) * mResults.hands;
             mResults.progress = mResults.hands / estimatedHands;
         }
-        mResults.preflopCombos = getPreflopComboCount();
+        mResults.preflopCombos = getPreflopCombinationCount();
         if (!mResults.enumerateAll && mResults.stdev < mStdevTarget) //TODO use max stdev of any player
             mStopped = true;
 

@@ -26,11 +26,11 @@ public:
     {
         // Number of players.
         unsigned players = 0;
-        // Equity by player.
+        // Equity by player (between 0 and 1).
         double equity[MAX_PLAYERS] = {};
         // Wins by player.
         uint64_t wins[MAX_PLAYERS] = {};
-        // Ties by player, adjusted for equity, 2-way splits = 1/2, 3-way = 1/3 etc..
+        // Ties by player, adjusted for equity: 2-way splits = 1/2, 3-way = 1/3 etc..
         double ties[MAX_PLAYERS] = {};
         // Wins for each combination of winning players. Index ranges from 0 to 2^(n-1), where
         // bit 0 is player 1, bit 1 player 2 etc).
@@ -105,8 +105,9 @@ private:
     typedef XorShift128Plus Rng;
 
     static const size_t MAX_LOOKUP_SIZE = 1000000;
-    static const size_t MAX_MULTIRANGE_SIZE = 10000;
+    static const size_t MAX_COMBINED_RANGE_SIZE = 10000;
 
+    // Temporary storage for results.
     struct BatchResults
     {
         BatchResults(unsigned nplayers)
@@ -122,6 +123,7 @@ private:
         unsigned winsByPlayerMask[1 << MAX_PLAYERS] = {};
     };
 
+    // Ad-hoc struct used when sorting hands.
     struct HandWithPlayerIdx
     {
         std::array<uint8_t,2> cards;
@@ -152,7 +154,7 @@ private:
     static std::vector<std::vector<std::array<uint8_t,2>>> removeInvalidCombos(const std::vector<CardRange>& handRanges,
                                                                uint64_t reservedCards);
     std::pair<uint64_t,uint64_t> reserveBatch(unsigned batchCount);
-    uint64_t getPreflopComboCount();
+    uint64_t getPreflopCombinationCount();
     uint64_t getPostflopCombinationCount();
 
     void updateResults(const BatchResults& stats, bool finished);
@@ -172,11 +174,10 @@ private:
     std::unordered_map<uint64_t, BatchResults> mLookup;
 
     // Constant shared data
-    std::vector<CardRange> mOriginalHandRanges;
-    std::vector<std::vector<std::array<uint8_t,2>>> mHandRanges;
-    std::vector<std::vector<Hand>> mEvaluatorHands;
-    MultiRange mMultiRanges[MAX_PLAYERS];
-    unsigned mMultiRangeCount;
+    std::vector<CardRange> mOriginalHandRanges; // Original ranges without before card removal.
+    std::vector<std::vector<std::array<uint8_t,2>>> mHandRanges; // Ranges after card removal.
+    CombinedRange mCombinedRanges[MAX_PLAYERS];
+    unsigned mCombinedRangeCount;
     uint64_t mDeadCards, mBoardCards;
     HandEvaluator mEval;
     double mStdevTarget;
