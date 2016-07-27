@@ -23,7 +23,7 @@ MultiRange::MultiRange(unsigned playerIdx, const std::vector<std::array<char,2>>
 
 MultiRange MultiRange::join(const MultiRange& range2) const
 {
-    assert(mPlayerCount + range2.mPlayerCount <= MAX_PLAYERS);
+    omp_assert(mPlayerCount + range2.mPlayerCount <= MAX_PLAYERS);
 
     MultiRange newRange;
     newRange.mPlayerCount = mPlayerCount + range2.mPlayerCount;
@@ -50,7 +50,7 @@ MultiRange MultiRange::join(const MultiRange& range2) const
 
 uint64_t MultiRange::estimateJoinSize(const MultiRange& range2) const
 {
-    assert(mPlayerCount + range2.mPlayerCount <= MAX_PLAYERS);
+    omp_assert(mPlayerCount + range2.mPlayerCount <= MAX_PLAYERS);
     uint64_t size = 0;
     for (const Combo& c1 : mCombos) {
         for (const Combo& c2 : range2.mCombos) {

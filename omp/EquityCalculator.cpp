@@ -218,6 +218,7 @@ bool EquityCalculator::randomizeHoleCards(uint64_t &usedCardsMask, unsigned* com
 void EquityCalculator::randomizeBoard(Hand& board, unsigned remainingCards, uint64_t usedCardsMask,
                                       Rng& rng, FastUniformIntDistribution<unsigned,16>& cardDist)
 {
+    omp_assert(remainingCards + bitCount(usedCardsMask) <= CARD_COUNT && remainingCards <= BOARD_CARDS);
     for(unsigned i = 0; i < remainingCards; ++i) {
         unsigned card;
         uint64_t cardMask;
@@ -234,6 +235,7 @@ void EquityCalculator::randomizeBoard(Hand& board, unsigned remainingCards, uint
 void EquityCalculator::evaluateHands(const Hand* playerHands, unsigned nplayers, const Hand& board, BatchResults* stats,
                                      unsigned weight, bool flushPossible)
 {
+    omp_assert(board.count() == BOARD_CARDS);
     ++stats->evalCount;
     unsigned bestRank = 0;
     unsigned winnersMask = 0;
@@ -670,10 +672,10 @@ uint64_t EquityCalculator::getPreflopComboCount()
 // of undealt board cards.
 uint64_t EquityCalculator::getPostflopCombinationCount()
 {
+    omp_assert(bitCount(mBoardCards) <= BOARD_CARDS);
     unsigned cardsInDeck = CARD_COUNT;
     cardsInDeck -= bitCount(mDeadCards | mBoardCards);
     cardsInDeck -= 2 * (unsigned)mHandRanges.size();
-    assert(bitCount(mBoardCards) <= BOARD_CARDS);
     unsigned boardCardsRemaining = BOARD_CARDS - bitCount(mBoardCards);
     uint64_t postflopCombos = 1;
     for (unsigned i = 0; i < boardCardsRemaining; ++i)

@@ -1,5 +1,6 @@
 #include "CardRange.h"
 #include "Constants.h"
+#include "Util.h"
 #include <locale>
 #include <algorithm>
 #include <cassert>
@@ -180,7 +181,7 @@ void CardRange::addAll()
 
 void CardRange::addCombo(unsigned c1, unsigned c2)
 {
-    assert(c1 != c2);
+    omp_assert(c1 != c2);
     if (c1 >> 2 < c2 >> 2 || c1 >> 2 == c2 >> 2 && (c1 & 3) < (c2 & 3))
         std::swap(c1, c2);
     mCombinations.emplace_back(std::array<char,2>{(char)c1, (char)c2});

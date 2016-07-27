@@ -43,6 +43,12 @@ inline unsigned bitCount(unsigned long long x)
     #endif
 }
 
+#if OMP_ASSERT
+    #define omp_assert(x) assert(x)
+#else
+    #define omp_assert(x) do { } while(0)
+#endif
+
 }
 
 #endif // UTIL_H
