@@ -18,7 +18,7 @@ public:
     struct Combo
     {
         uint64_t cardMask;
-        std::array<char,2> holeCards[MAX_PLAYERS];
+        std::array<uint8_t,2> holeCards[MAX_PLAYERS];
         Hand evalState[MAX_PLAYERS];
     };
 
@@ -26,7 +26,7 @@ public:
     MultiRange();
 
     // Create a range for one player.
-    MultiRange(unsigned playerIdx, const std::vector<std::array<char,2>>& holeCards);
+    MultiRange(unsigned playerIdx, const std::vector<std::array<uint8_t,2>>& holeCards);
 
     // Combine with another range and return the result.
     MultiRange join(const MultiRange& range2) const;
@@ -35,7 +35,7 @@ public:
     uint64_t estimateJoinSize(const MultiRange& range2) const;
 
     // Takes multiple ranges and combines as many of them as possible, while keeping range sizes below the limit.
-    static std::vector<MultiRange> joinRanges(const std::vector<std::vector<std::array<char,2>>>& holeCardRanges,
+    static std::vector<MultiRange> joinRanges(const std::vector<std::vector<std::array<uint8_t,2>>>& holeCardRanges,
                                               size_t maxSize);
 
     // Randomize order of combos (good for random walk simulation).

@@ -30,7 +30,7 @@ struct Hand
     }
 
     // Initialize hand from two cards.
-    Hand(std::array<char,2> holeCards)
+    Hand(std::array<uint8_t,2> holeCards)
     {
         omp_assert(holeCards[0] < CARD_COUNT && holeCards[1] < CARD_COUNT);
         *this = CARDS[holeCards[0]];

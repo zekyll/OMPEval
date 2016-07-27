@@ -124,7 +124,7 @@ private:
 
     struct HandWithPlayerIdx
     {
-        std::array<char,2> cards;
+        std::array<uint8_t,2> cards;
         unsigned playerIdx;
     };
 
@@ -149,7 +149,7 @@ private:
                                    uint64_t* boardCards, uint64_t* usedCards);
     static uint64_t calculateUniquePreflopId(const HandWithPlayerIdx* playerHands, unsigned nplayers);
     static Hand getBoardFromBitmask(uint64_t board);
-    static std::vector<std::vector<std::array<char,2>>> removeInvalidCombos(const std::vector<CardRange>& handRanges,
+    static std::vector<std::vector<std::array<uint8_t,2>>> removeInvalidCombos(const std::vector<CardRange>& handRanges,
                                                                uint64_t reservedCards);
     std::pair<uint64_t,uint64_t> reserveBatch(unsigned batchCount);
     uint64_t getPreflopComboCount();
@@ -173,7 +173,7 @@ private:
 
     // Constant shared data
     std::vector<CardRange> mOriginalHandRanges;
-    std::vector<std::vector<std::array<char,2>>> mHandRanges;
+    std::vector<std::vector<std::array<uint8_t,2>>> mHandRanges;
     std::vector<std::vector<Hand>> mEvaluatorHands;
     MultiRange mMultiRanges[MAX_PLAYERS];
     unsigned mMultiRangeCount;

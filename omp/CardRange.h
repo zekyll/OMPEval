@@ -29,12 +29,12 @@ public:
     CardRange(const char* text);
 
     // Constructs a range from a list of two-card combinations.
-    CardRange(const std::vector<std::array<char,2>>& combos);
+    CardRange(const std::vector<std::array<uint8_t,2>>& combos);
 
     // Returns a list of card combinations belonging to this range. Guarantees that there are no duplicates.
     // Cards in each combo are ordered so that the bigger rank is always first. The whole vector is sorted in the
     // following order: 1) rank of first card 2) rank of second card 3) suit of first card 4) suit of second card
-    const std::vector<std::array<char,2>>& combinations() const
+    const std::vector<std::array<uint8_t,2>>& combinations() const
     {
         return mCombinations;
     }
@@ -55,7 +55,7 @@ private:
     static unsigned charToRank(char c);
     static unsigned charToSuit(char c);
 
-    std::vector<std::array<char,2>> mCombinations;
+    std::vector<std::array<uint8_t,2>> mCombinations;
 };
 
 }

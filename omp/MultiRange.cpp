@@ -11,7 +11,7 @@ MultiRange::MultiRange()
 {
 }
 
-MultiRange::MultiRange(unsigned playerIdx, const std::vector<std::array<char,2>>& holeCards)
+MultiRange::MultiRange(unsigned playerIdx, const std::vector<std::array<uint8_t,2>>& holeCards)
 {
     mPlayerCount = 1;
     mPlayers[0] = playerIdx;
@@ -63,7 +63,7 @@ uint64_t MultiRange::estimateJoinSize(const MultiRange& range2) const
 }
 
 std::vector<MultiRange> MultiRange::joinRanges(
-        const std::vector<std::vector<std::array<char,2>>>& holeCardRanges, size_t maxSize)
+        const std::vector<std::vector<std::array<uint8_t,2>>>& holeCardRanges, size_t maxSize)
 {
     std::vector<MultiRange> multiRanges;
     for (unsigned i = 0; i < holeCardRanges.size(); ++i)

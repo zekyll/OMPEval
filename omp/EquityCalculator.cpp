@@ -594,7 +594,7 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
 
     // Holecards need to be handled after any fixed cards, because the lookup is only based on them.
     for (unsigned i = 0; i < nplayers; ++i) {
-        for (char& c : playerHands[i].cards) {
+        for (uint8_t& c : playerHands[i].cards) {
             unsigned suit = c & SUIT_MASK;
             if (transform[suit] == ~0)
                 transform[suit] = suitCount++;
@@ -631,12 +631,12 @@ Hand EquityCalculator::getBoardFromBitmask(uint64_t cards)
 }
 
 // Removes combos that conflict with board and dead cards.
-std::vector<std::vector<std::array<char,2>>> EquityCalculator::removeInvalidCombos(
+std::vector<std::vector<std::array<uint8_t,2>>> EquityCalculator::removeInvalidCombos(
         const std::vector<CardRange>& handRanges, uint64_t reservedCards)
 {
-    std::vector<std::vector<std::array<char,2>>> result;
+    std::vector<std::vector<std::array<uint8_t,2>>> result;
     for (auto& hr : handRanges) {
-        result.push_back(std::vector<std::array<char,2>>{});
+        result.push_back(std::vector<std::array<uint8_t,2>>{});
         for (auto& h : hr.combinations()) {
             uint64_t handMask = (1ull << h[0]) | (1ull << h[1]);
             if (!(reservedCards & handMask))

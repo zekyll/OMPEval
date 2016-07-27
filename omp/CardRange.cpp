@@ -18,7 +18,7 @@ CardRange::CardRange(const std::string& text)
     // Turn to lowercase and remove spaces and control chars.
     std::locale loc;
     std::string s;
-    for (char c:text) {
+    for (char c: text) {
         if (std::isgraph(c, loc))
             s.push_back(std::tolower(c, loc));
     }
@@ -39,7 +39,7 @@ CardRange::CardRange(const char* text)
 }
 
 // Construct from vctor.
-CardRange::CardRange(const std::vector<std::array<char,2>>& combos)
+CardRange::CardRange(const std::vector<std::array<uint8_t,2>>& combos)
 {
     for (auto& combo : combos)
         addCombo(combo[0], combo[1]);
@@ -51,7 +51,7 @@ uint64_t CardRange::getCardMask(const std::string& text)
 {
     std::locale loc;
     std::string s;
-    for (char c:text) {
+    for (char c: text) {
         if (std::isgraph(c, loc))
             s.push_back(std::tolower(c, loc));
     }
@@ -184,14 +184,14 @@ void CardRange::addCombo(unsigned c1, unsigned c2)
     omp_assert(c1 != c2);
     if (c1 >> 2 < c2 >> 2 || c1 >> 2 == c2 >> 2 && (c1 & 3) < (c2 & 3))
         std::swap(c1, c2);
-    mCombinations.emplace_back(std::array<char,2>{(char)c1, (char)c2});
+    mCombinations.emplace_back(std::array<uint8_t,2>{(uint8_t)c1, (uint8_t)c2});
 }
 
 // Removes duplicate combos.
 void CardRange::removeDuplicates()
 {
-    std::sort(mCombinations.begin(), mCombinations.end(), [](const std::array<char,2>& lhs,
-              const std::array<char,2>& rhs){
+    std::sort(mCombinations.begin(), mCombinations.end(), [](const std::array<uint8_t,2>& lhs,
+              const std::array<uint8_t,2>& rhs){
         if (lhs[0] >> 2 != rhs[0] >> 2)
             return lhs[0] >> 2 < rhs[0] >> 2;
         if (lhs[1] >> 2 != rhs[1] >> 2)
@@ -200,8 +200,8 @@ void CardRange::removeDuplicates()
             return (lhs[0] & 3) < (rhs[0] & 3);
         return (lhs[1] & 3) < (rhs[1] & 3);
     });
-    auto last = std::unique(mCombinations.begin(), mCombinations.end(), [](const std::array<char,2>& lhs,
-                            const std::array<char,2>& rhs){
+    auto last = std::unique(mCombinations.begin(), mCombinations.end(), [](const std::array<uint8_t,2>& lhs,
+                            const std::array<uint8_t,2>& rhs){
         return lhs[0] == rhs[0] && lhs[1] == rhs[1];
     });
     mCombinations.erase(last, mCombinations.end());
