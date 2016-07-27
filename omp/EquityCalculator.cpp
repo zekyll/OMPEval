@@ -72,11 +72,11 @@ void EquityCalculator::simulate()
     BatchResults stats(nplayers);
 
     Rng rng{std::random_device{}()};
-    UniformIntDistribution cardDist(0, 51);
-    UniformIntDistribution comboDists[MAX_PLAYERS];
+    FastUniformIntDistribution<unsigned,16> cardDist(0, 51);
+    FastUniformIntDistribution<unsigned,21> comboDists[MAX_PLAYERS];
     unsigned multiRangeCount = mMultiRangeCount;
     for (unsigned i = 0; i < mMultiRangeCount; ++i)
-        comboDists[i] = UniformIntDistribution(0, (unsigned)mMultiRanges[i].combos().size() - 1);
+        comboDists[i] = FastUniformIntDistribution<unsigned,21>(0, (unsigned)mMultiRanges[i].combos().size() - 1);
 
     for (;;) {
         // Randomize hands and check for duplicate holecards.
@@ -122,7 +122,7 @@ void EquityCalculator::simulate()
 
 // Naive method of randomizing the board by using rejection sampling.
 void EquityCalculator::randomizeBoard(Hand& board, unsigned remainingCards, uint64_t usedCardsMask,
-                                      Rng& rng, UniformIntDistribution& cardDist)
+                                      Rng& rng, FastUniformIntDistribution<unsigned,16>& cardDist)
 {
     for(unsigned i = 0; i < remainingCards; ++i) {
         unsigned card;

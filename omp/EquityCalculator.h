@@ -105,7 +105,6 @@ public:
 
 private:
     typedef XorShift128Plus Rng;
-    typedef FastUniformIntDistribution<unsigned> UniformIntDistribution;
 
     static const size_t MAX_LOOKUP_SIZE = 1000000;
     static const size_t MAX_MULTIRANGE_SIZE = 20000;
@@ -133,7 +132,7 @@ private:
 
     void simulate();
     void randomizeBoard(Hand& board, unsigned remainingCards, uint64_t usedCardsMask,
-                        Rng& rng, UniformIntDistribution& cardDist);
+                        Rng& rng, FastUniformIntDistribution<unsigned,16>& cardDist);
     void evaluateHands(const Hand* playerHands, unsigned nplayers, const Hand& board, BatchResults* stats,
                        unsigned weight, bool flushPossible = true);
 
