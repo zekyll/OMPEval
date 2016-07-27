@@ -1,4 +1,4 @@
-#include "MultiRange.h"
+#include "CombinedRange.h"
 
 #include <random>
 #include <algorithm>

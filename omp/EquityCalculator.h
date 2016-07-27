@@ -1,7 +1,7 @@
 #ifndef EQUITYCALCULATOR_H
 #define EQUITYCALCULATOR_H
 
-#include "MultiRange.h"
+#include "CombinedRange.h"
 #include "Random.h"
 #include "CardRange.h"
 #include "HandEvaluator.h"
