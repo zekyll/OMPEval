@@ -227,7 +227,7 @@ void EquityCalculator::randomizeBoard(Hand& board, unsigned remainingCards, uint
             cardMask = 1ull << card;
         } while (usedCardsMask & cardMask);
         usedCardsMask |= cardMask;
-        board.combine(card);
+        board += Hand(card);
     }
 }
 
@@ -240,11 +240,7 @@ void EquityCalculator::evaluateHands(const Hand* playerHands, unsigned nplayers,
     unsigned bestRank = 0;
     unsigned winnersMask = 0;
     for (unsigned i = 0; i < nplayers; ++i) {
-        Hand hand = board;
-        if (flushPossible)
-            hand.combine(playerHands[i]);
-        else
-            hand.combineNoFlush(playerHands[i]);
+        Hand hand = board + playerHands[i];
         unsigned rank = mEval.evaluate(hand, flushPossible);
         if (rank > bestRank) {
             bestRank = rank;
@@ -431,8 +427,7 @@ void EquityCalculator::enumerateBoardRec(const Hand* playerHands, unsigned nplay
             for (unsigned i = start; i < ndeck; ) {
                 unsigned multiplier = 1;
 
-                Hand newBoard = board;
-                newBoard.combineNoFlush(deck[i]);
+                Hand newBoard = board + deck[i];
 
                 // Count how many cards there are with same rank.
                 unsigned rank = deck[i] >> 2;
@@ -459,8 +454,7 @@ void EquityCalculator::enumerateBoardRec(const Hand* playerHands, unsigned nplay
                     lastRank = rank;
                 }
 
-                Hand newBoard = board;
-                newBoard.combine(deck[i]);
+                Hand newBoard = board + deck[i];
                 evaluateHands(playerHands, nplayers, newBoard, stats, multiplier * weight);
             }
         }
@@ -493,7 +487,7 @@ void EquityCalculator::enumerateBoardRec(const Hand* playerHands, unsigned nplay
             for (unsigned repeats = 1; repeats <= std::min(irrelevantCount, cardsLeft); ++repeats) {
                 static const unsigned BINOM_COEFF[5][5] = {{0}, {0, 1}, {1, 2, 1}, {1, 3, 3, 1}, {1, 4, 6, 4, 1}};
                 unsigned newWeight = BINOM_COEFF[irrelevantCount][repeats] * weight;
-                newBoard.combine(deck[i + repeats - 1]);
+                newBoard += deck[i + repeats - 1];
                 if (repeats == cardsLeft)
                     evaluateHands(playerHands, nplayers, newBoard, stats, newWeight);
                 else
@@ -503,7 +497,7 @@ void EquityCalculator::enumerateBoardRec(const Hand* playerHands, unsigned nplay
 
             i += irrelevantCount - 1;
         } else {
-            newBoard.combine(deck[i]);
+            newBoard += deck[i];
             ++suitCounts[suit];
             enumerateBoardRec(playerHands, nplayers, stats, newBoard, deck, ndeck, suitCounts,
                               cardsLeft - 1, i + 1, weight);
@@ -625,7 +619,7 @@ Hand EquityCalculator::getBoardFromBitmask(uint64_t cards)
     Hand board = Hand::empty();
     for (unsigned c = 0; c < CARD_COUNT; ++c) {
         if (cards & (1ull << c))
-            board.combine(c);
+            board += c;
     }
     return board;
 }

@@ -24,19 +24,12 @@ void sequentialEvaluationBenchmark()
                 for (unsigned c3 = c2 + 1; c3 < 52; c3++) {
                     for (unsigned c4 = c3 + 1; c4 < 52; c4++) {
                         for (unsigned c5 = c4 + 1; c5 < 52; c5++) {
-                            Hand h5 = Hand::empty();
-                            h5.combine(c1);
-                            h5.combine(c2);
-                            h5.combine(c3);
-                            h5.combine(c4);
-                            h5.combine(c5);
+                            Hand h5 = Hand::empty() + c1 + c2 + c3 + c4 + c5;
                             for (unsigned c6 = c5 + 1; c6 < 52; c6++) {
-                                Hand h6 = h5;
-                                h6.combine(c6);
+                                Hand h6 = h5 + c6;
                                 for (unsigned c7 = c6 + 1; c7 < 52; c7++) {
                                     ++count;
-                                    Hand h7 = h6;
-                                    h7.combine(c7);
+                                    Hand h7 = h6 + c7;
                                     sum += eval.evaluate(h7);
                                 }
                             }
@@ -74,7 +67,7 @@ void randomEvaluationBenchmark()
                 cardMask = 1ull << card;
             } while (usedCardsMask & cardMask);
             usedCardsMask |= cardMask;
-            table.back().combine(card);
+            table.back() += card;
         }
     }
 
@@ -119,16 +112,9 @@ void randomEvaluationBenchmark2()
     auto t1 = chrono::high_resolution_clock::now();
 
     for (int i = 0; i < 50; ++i) {
-        for (auto& hand: table) {
-            Hand h = Hand::empty();
-            h.combine(hand[0]);
-            h.combine(hand[1]);
-            h.combine(hand[2]);
-            h.combine(hand[3]);
-            h.combine(hand[4]);
-            h.combine(hand[5]);
-            h.combine(hand[6]);
-            sum += eval.evaluate(h);
+        for (auto& h: table) {
+            Hand hand = Hand::empty() + h[0] + h[1] + h[2] + h[3] + h[4] + h[5] + h[6];
+            sum += eval.evaluate(hand);
             ++count;
         }
     }

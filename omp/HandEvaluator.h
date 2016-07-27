@@ -22,7 +22,8 @@ struct Hand
     {
     }
 
-    // Initialize hand from one card.
+    // Create a Hand from a card. CardIdx is an integer between 0 and 51, so that CARD = 4 * RANK + SUIT, where
+    // rank ranges from 0 (deuce) to 12 (ace) and suit is from 0 (spade) to 3 (diamond).
     Hand(unsigned cardIdx)
     {
         omp_assert(cardIdx < CARD_COUNT);
@@ -33,20 +34,19 @@ struct Hand
     Hand(std::array<uint8_t,2> holeCards)
     {
         omp_assert(holeCards[0] < CARD_COUNT && holeCards[1] < CARD_COUNT);
-        *this = CARDS[holeCards[0]];
-        combine(holeCards[1]);
-    }
-
-    // Add a card to hand. Card is between 0 and 51, so that CARD = 4 * RANK + SUIT, where rank ranges
-    // from 0 (deuce) to 12 (ace) and suit is from 0 (spade) to 3 (diamond).
-    void combine(unsigned cardIdx)
-    {
-        omp_assert(cardIdx < CARD_COUNT);
-        combine(CARDS[cardIdx]);
+        *this = CARDS[holeCards[0]] + CARDS[holeCards[1]];
     }
 
     // Combine with another hand.
-    void combine(const Hand& hand2)
+    Hand operator+(const Hand& hand2) const
+    {
+        Hand ret = *this;
+        ret += hand2;
+        return ret;
+    }
+
+    // Combine with another hand.
+    Hand& operator+=(const Hand& hand2)
     {
         omp_assert(!(mask() & hand2.mask()));
         #if OMP_SSE4
@@ -55,23 +55,10 @@ struct Hand
         mKey += hand2.mKey;
         mMask |= hand2.mMask;
         #endif
+        return *this;
     }
 
-    void combineNoFlush(unsigned cardIdx)
-    {
-        combineNoFlush(CARDS[cardIdx]);
-    }
-
-    void combineNoFlush(const Hand& hand2)
-    {
-        #if OMP_SSE4
-        mData = _mm_add_epi64(mData, hand2.mData);
-        #else
-        mKey += hand2.mKey;
-        #endif
-    }
-
-    // Initialize an empty hand.
+    // Initialize a new empty hand.
     static Hand empty()
     {
         // Initializes suit counters to 3 so that the flush check bits gets set by the 5th suited card.
@@ -133,7 +120,8 @@ private:
     }
 
     // Bits 0-31: key to non-flush lookup table (linear combination of the rank constants)
-    // Bits 32-48: suit counters
+    // Bits 32-47: suit counts
+    // Bits 48-51: card count
     // Bits 64-128: bit mask for all cards (suits are in 16-bit groups).
     #if OMP_SSE4
     __m128i mData;
