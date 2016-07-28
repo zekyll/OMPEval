@@ -146,11 +146,12 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
 
     // Set initial state.
     if (randomizeHoleCards(usedCardsMask, comboIndexes, playerHands, rng, comboDists)) {
+        usedCardsMask |= mDeadCards | mBoardCards;
         // Loop until stopped.
         for (;;) {
             // Randomize board and evaluate for current holecards.
             Hand board = fixedBoard;
-            randomizeBoard(board, remainingCards, usedCardsMask | mDeadCards | mBoardCards, rng, cardDist);
+            randomizeBoard(board, remainingCards, usedCardsMask, rng, cardDist);
             evaluateHands(playerHands, nplayers, board, &stats, 1);
 
             // Update results periodically.
@@ -164,6 +165,7 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
                 // This shouldn't happen if MAX_COMBINED_RANGE_SIZE is big enough, but extra randomization never hurts.
                 if (!randomizeHoleCards(usedCardsMask, comboIndexes, playerHands, rng, comboDists))
                     break;
+                usedCardsMask |= mDeadCards | mBoardCards;
             }
 
             // Choose random player and iterate to next valid combo. If current combo is the only one that is valid
