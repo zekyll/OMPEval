@@ -136,8 +136,9 @@ private:
                             Rng& rng, FastUniformIntDistribution<unsigned,21>*comboDists);
     void randomizeBoard(Hand& board, unsigned remainingCards, uint64_t usedCardsMask,
                         Rng& rng, FastUniformIntDistribution<unsigned,16>& cardDist);
+    template<bool tFlushPossible = true>
     void evaluateHands(const Hand* playerHands, unsigned nplayers, const Hand& board, BatchResults* stats,
-                       unsigned weight, bool flushPossible = true);
+                       unsigned weight);
     void enumerate();
     void enumerateBoard(const HandWithPlayerIdx* playerHands, unsigned nplayers,
                    const Hand& board, uint64_t usedCardsMask, BatchResults* stats);

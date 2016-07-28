@@ -231,8 +231,9 @@ void EquityCalculator::randomizeBoard(Hand& board, unsigned remainingCards, uint
 }
 
 // Evaluates a single showdown with one or more players and stores the result.
+template<bool tFlushPossible>
 void EquityCalculator::evaluateHands(const Hand* playerHands, unsigned nplayers, const Hand& board, BatchResults* stats,
-                                     unsigned weight, bool flushPossible)
+                                     unsigned weight)
 {
     omp_assert(board.count() == BOARD_CARDS);
     ++stats->evalCount;
@@ -240,7 +241,7 @@ void EquityCalculator::evaluateHands(const Hand* playerHands, unsigned nplayers,
     unsigned winnersMask = 0;
     for (unsigned i = 0, m = 1; i < nplayers; ++i, m <<= 1) {
         Hand hand = board + playerHands[i];
-        unsigned rank = mEval.evaluate(hand, flushPossible);
+        unsigned rank = mEval.evaluate<tFlushPossible>(hand);
         if (rank > bestRank) {
             bestRank = rank;
             winnersMask = m;
@@ -433,7 +434,7 @@ void EquityCalculator::enumerateBoardRec(const Hand* playerHands, unsigned nplay
                 for (++i; i < ndeck && deck[i] >> 2 == rank; ++i)
                     ++multiplier;
 
-                evaluateHands(playerHands, nplayers, newBoard, stats, multiplier * weight, false);
+                evaluateHands<false>(playerHands, nplayers, newBoard, stats, multiplier * weight);
             }
         } else {
             unsigned lastRank = ~0;
