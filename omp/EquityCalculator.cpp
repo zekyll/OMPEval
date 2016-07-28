@@ -238,14 +238,14 @@ void EquityCalculator::evaluateHands(const Hand* playerHands, unsigned nplayers,
     ++stats->evalCount;
     unsigned bestRank = 0;
     unsigned winnersMask = 0;
-    for (unsigned i = 0; i < nplayers; ++i) {
+    for (unsigned i = 0, m = 1; i < nplayers; ++i, m <<= 1) {
         Hand hand = board + playerHands[i];
         unsigned rank = mEval.evaluate(hand, flushPossible);
         if (rank > bestRank) {
             bestRank = rank;
-            winnersMask = 1 << i;
+            winnersMask = m;
         } else if (rank == bestRank) {
-            winnersMask |= 1 << i;
+            winnersMask |= m;
         }
     }
 
