@@ -136,7 +136,7 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
     Rng rng{std::random_device{}()};
     FastUniformIntDistribution<unsigned,16> cardDist(0, CARD_COUNT - 1);
     FastUniformIntDistribution<unsigned,21> comboDists[MAX_PLAYERS];
-    FastUniformIntDistribution<unsigned,16> mrDist(0, mCombinedRangeCount - 1);
+    FastUniformIntDistribution<unsigned,16> combinedRangeDist(0, mCombinedRangeCount - 1);
     for (unsigned i = 0; i < mCombinedRangeCount; ++i)
         comboDists[i] = FastUniformIntDistribution<unsigned,21>(0, (unsigned)mCombinedRanges[i].combos().size() - 1);
 
@@ -170,19 +170,22 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
 
             // Choose random player and iterate to next valid combo. If current combo is the only one that is valid
             // then will loop back to itself.
-            unsigned mrIdx = mrDist(rng);
-            usedCardsMask -= mCombinedRanges[mrIdx].combos()[comboIndexes[mrIdx]].cardMask;
+            unsigned combinedRangeIdx = combinedRangeDist(rng);
+            const CombinedRange& combinedRange = mCombinedRanges[combinedRangeIdx];
+            unsigned comboIdx = comboIndexes[combinedRangeIdx]; // Caching array accessess for 3% speedup!
+            usedCardsMask -= combinedRange.combos()[comboIdx].cardMask;
             uint64_t mask = 0;
             do {
-                if (++comboIndexes[mrIdx] == mCombinedRanges[mrIdx].combos().size())
-                    comboIndexes[mrIdx] = 0;
-                mask = mCombinedRanges[mrIdx].combos()[comboIndexes[mrIdx]].cardMask;
+                if (++comboIdx == combinedRange.size())
+                    comboIdx = 0;
+                mask = combinedRange.combos()[comboIdx].cardMask;
             } while (mask & usedCardsMask);
             usedCardsMask |= mask;
-            for (unsigned i = 0; i < mCombinedRanges[mrIdx].playerCount(); ++i) {
-                unsigned playerIdx = mCombinedRanges[mrIdx].players()[i];
-                playerHands[playerIdx] = mCombinedRanges[mrIdx].combos()[comboIndexes[mrIdx]].evalHands[i];
+            for (unsigned i = 0; i < combinedRange.playerCount(); ++i) {
+                unsigned playerIdx = combinedRange.players()[i];
+                playerHands[playerIdx] = combinedRange.combos()[comboIdx].evalHands[i];
             }
+            comboIndexes[combinedRangeIdx] = comboIdx;
         }
     }
 

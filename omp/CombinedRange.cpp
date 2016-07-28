@@ -19,6 +19,7 @@ CombinedRange::CombinedRange(unsigned playerIdx, const std::vector<std::array<ui
         Combo c{1ull << h[0] | 1ull << h[1], {h}, {Hand(h)}};
         mCombos.emplace_back(c);
     }
+    mSize = mCombos.size();
 }
 
 CombinedRange CombinedRange::join(const CombinedRange& range2) const
@@ -44,6 +45,7 @@ CombinedRange CombinedRange::join(const CombinedRange& range2) const
             newRange.mCombos.push_back(c);
         }
     }
+    newRange.mSize = newRange.mCombos.size();
 
     return newRange;
 }

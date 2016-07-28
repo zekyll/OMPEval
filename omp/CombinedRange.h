@@ -56,11 +56,17 @@ public:
         return mCombos;
     }
 
+    size_t size() const
+    {
+        return mSize;
+    }
+
 private:
 
     std::vector<Combo> mCombos;
     std::array<unsigned, MAX_PLAYERS> mPlayers;
     unsigned mPlayerCount;
+    size_t mSize;
 };
 
 }
