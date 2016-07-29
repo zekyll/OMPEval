@@ -711,8 +711,7 @@ void EquityCalculator::updateResults(const BatchResults& stats, bool threadFinis
         mResults.intervalSpeed = mResults.intervalHands / (mResults.intervalTime + 1e-9);
         mResults.speed = mResults.hands / (mResults.time + 1e-9);
         mResults.intervalHands = 0;
-        mResults.stdev = std::sqrt(mBatchSumSqr / mBatchCount - (mBatchSum / mBatchCount)
-                                   * (mBatchSum / mBatchCount)) / sqrt(mBatchCount);
+        mResults.stdev = std::sqrt(1e-9 + mBatchSumSqr - mBatchSum * mBatchSum / mBatchCount) / mBatchCount;
         mResults.stdevPerHand = mResults.stdev * std::sqrt(mResults.hands);
         if (mResults.enumerateAll) {
             mResults.progress = (double)mEnumPosition / getPreflopCombinationCount();
@@ -721,6 +720,7 @@ void EquityCalculator::updateResults(const BatchResults& stats, bool threadFinis
             mResults.progress = mResults.hands / estimatedHands;
         }
         mResults.preflopCombos = getPreflopCombinationCount();
+
         if (!mResults.enumerateAll && mResults.stdev < mStdevTarget) //TODO use max stdev of any player
             mStopped = true;
 
