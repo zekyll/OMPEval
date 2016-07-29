@@ -58,6 +58,27 @@ struct Hand
         return *this;
     }
 
+    // Remove cards from this hand.
+    Hand operator-(const Hand& hand2) const
+    {
+        Hand ret = *this;
+        ret -= hand2;
+        return ret;
+    }
+
+    // Remove cards from this hand.
+    Hand& operator-=(const Hand& hand2)
+    {
+        omp_assert((mask() & hand2.mask()) == hand2.mask());
+        #if OMP_SSE4
+        mData = _mm_sub_epi64(mData, hand2.mData);
+        #else
+        mKey -= hand2.mKey;
+        mMask -= hand2.mMask;
+        #endif
+        return *this;
+    }
+
     // Initialize a new empty hand.
     static Hand empty()
     {
