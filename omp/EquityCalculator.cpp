@@ -146,7 +146,6 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
 
     // Set initial state.
     if (randomizeHoleCards(usedCardsMask, comboIndexes, playerHands, rng, comboDists)) {
-        usedCardsMask |= mDeadCards | mBoardCards;
         // Loop until stopped.
         for (;;) {
             // Randomize board and evaluate for current holecards.
@@ -165,7 +164,6 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
                 // This shouldn't happen if MAX_COMBINED_RANGE_SIZE is big enough, but extra randomization never hurts.
                 if (!randomizeHoleCards(usedCardsMask, comboIndexes, playerHands, rng, comboDists))
                     break;
-                usedCardsMask |= mDeadCards | mBoardCards;
             }
 
             // Choose random player and iterate to next valid combo. If current combo is the only one that is valid
@@ -199,7 +197,7 @@ bool EquityCalculator::randomizeHoleCards(uint64_t &usedCardsMask, unsigned* com
     unsigned n = 0;
     for(bool ok = false; !ok && n < 1000; ++n) {
         ok = true;
-        usedCardsMask = 0;
+        usedCardsMask = mDeadCards | mBoardCards;
         for (unsigned i = 0; i < mCombinedRangeCount; ++i) {
             unsigned comboIdx = comboDists[i](rng);
             comboIndexes[i] = comboIdx;
