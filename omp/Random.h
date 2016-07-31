@@ -15,7 +15,7 @@ public:
 
     XoroShiro128Plus(uint64_t seed)
     {
-        mState[0] = mState[1] = seed;
+        mState[0] = ~(mState[1] = seed);
     }
 
     uint64_t operator()()

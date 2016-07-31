@@ -174,8 +174,9 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
             usedCardsMask -= combinedRange.combos()[comboIdx].cardMask;
             uint64_t mask = 0;
             do {
-                if (++comboIdx == combinedRange.size())
-                    comboIdx = 0;
+                if (comboIdx == 0)
+                    comboIdx = combinedRange.size();
+                --comboIdx;
                 mask = combinedRange.combos()[comboIdx].cardMask;
             } while (mask & usedCardsMask);
             usedCardsMask |= mask;
