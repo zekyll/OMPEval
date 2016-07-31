@@ -49,7 +49,7 @@ public:
         double progress = 0;
         // Number of different combinations of starting hands for all players.
         uint64_t preflopCombos = 0;
-        // Number of preflop combos that were skipped due the having same cards.
+        // Number of preflop combos that were skipped due the having same cards. (Enumeration only.)
         uint64_t skippedPreflopCombos = 0;
         // How many of the preflop combos were actually enumerated.
         uint64_t evaluatedPreflopCombos = 0;
@@ -102,7 +102,7 @@ public:
     }
 
 private:
-    typedef XorShift128Plus Rng;
+    typedef XoroShiro128Plus Rng;
 
     static const size_t MAX_LOOKUP_SIZE = 1000000;
     static const size_t MAX_COMBINED_RANGE_SIZE = 10000;

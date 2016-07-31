@@ -8,36 +8,34 @@
 namespace omp {
 
 // Fast 64-bit PRNG with a period of 2^128-1.
-class XorShift128Plus
+class XoroShiro128Plus
 {
 public:
     typedef uint64_t result_type;
 
-    XorShift128Plus(uint64_t seed)
+    XoroShiro128Plus(uint64_t seed)
     {
         mState[0] = mState[1] = seed;
     }
 
     uint64_t operator()()
     {
-        uint64_t x = mState[0], y = mState[1];
-        mState[0] = y;
-        x ^= x << 23;
-        mState[1] = x ^ y ^ (x >> 17) ^ (y >> 26);
-        return mState[1] + y;
-    }
-
-    static uint64_t min()
-    {
-        return 0;
-    }
-
-    static uint64_t max()
-    {
-        return ~0ull;
+        uint64_t s0 = mState[0];
+        uint64_t s1 = mState[1];
+        uint64_t result = s0 + s1;
+        s1 ^= s0;
+        mState[0] = rotl(s0, 55) ^ s1 ^ (s1 << 14);
+        mState[1] = rotl(s1, 36);
+        return result;
     }
 
 private:
+    static uint64_t rotl(uint64_t x, unsigned k)
+    {
+        // MSVC and most g++ versions will compile this to rotl on x64.
+        return (x << k) | (x >> (64 - k));
+    }
+
     uint64_t mState[2];
 };
 
