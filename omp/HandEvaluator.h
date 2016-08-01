@@ -184,10 +184,10 @@ public:
     }
 
 private:
-    static unsigned perfHash(unsigned key)
+    static unsigned perfHash(uint32_t key)
     {
         omp_assert(key <= MAX_KEY);
-        return (key & PERF_HASH_COLUMN_MASK) + PERF_HASH_ROW_OFFSETS[key >> PERF_HASH_ROW_SHIFT];
+        return key + PERF_HASH_ROW_OFFSETS[key >> PERF_HASH_ROW_SHIFT];
     }
 
     static void staticInit();
@@ -196,6 +196,7 @@ private:
                                    unsigned maxPair, unsigned maxTrips, unsigned maxStraight, bool flush = false);
     static unsigned getKey(uint64_t rankCounts, bool flush);
     static unsigned getBiggestStraight(uint64_t rankCounts);
+    static void adjustOffsets();
 
     // Rank multipliers for non-flush and flush hands.
     static const unsigned RANKS[RANK_COUNT];
