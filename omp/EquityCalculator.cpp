@@ -51,6 +51,7 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
     mUnfinishedThreads = threadCount;
 
     // Start threads.
+    mThreads.clear();
     for (unsigned i = 0; i < threadCount; ++i) {
         mThreads.emplace_back([this,enumerateAll]{
             if (enumerateAll)
