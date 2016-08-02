@@ -6,7 +6,8 @@
 #include <iostream>
 #include <chrono>
 #include <vector>
-#include <algorithm>
+#include <numeric>
+#include <cmath>
 
 using namespace std;
 using namespace omp;
@@ -141,20 +142,22 @@ class EquityCalculatorTest : public ttest::TestBase
         vector<uint64_t> expectedResults;
     };
 
-    const vector<TestCase> TESTDATA = {
-        {{"AA", "KK"}, "", "",
-            {0, 50371344, 10986372, 285228}},
-        {{"AK", "random"}, "2c3c", "",
-            {0, 159167583, 108567320, 6233737}},
-        {{"random", "AA", "33"}, "2c3c8h", "6h",
-            {0, 808395, 1681125, 20076, 12151512, 0, 0, 0}},
-        {{"random", "random", "AK"}, "4hAd3c4c7c", "6h",
-            {0, 1461364, 1461364, 6386, 6760010, 42420, 42420, 108}},
-        {{"3d7d", "2h9h", "2c9c"}, "5d5h5c", "3s3c",
-            {0, 183, 28, 0, 28, 0, 380, 201}},
-        {{"AA,KK", "KK,QQ", "QQ,AA"}, "", "",
-            {0, 348272820, 119882736, 37653912, 303253020, 74015280, 1266624, 3904200}},
-    };
+	vector<TestCase> TESTDATA = [&]{
+		vector<TestCase> td;
+		td.emplace_back(TestCase{{"AA", "KK"}, "", "",
+                {0, 50371344, 10986372, 285228}});
+		td.emplace_back(TestCase{ { "AK", "random"}, "2c3c", "",
+                {0, 159167583, 108567320, 6233737}});
+		td.emplace_back(TestCase{ {"random", "AA", "33"}, "2c3c8h", "6h",
+                {0, 808395, 1681125, 20076, 12151512, 0, 0, 0}});
+		td.emplace_back(TestCase{ {"random", "random", "AK"}, "4hAd3c4c7c", "6h",
+                {0, 1461364, 1461364, 6386, 6760010, 42420, 42420, 108}});
+		td.emplace_back(TestCase{ {"3d7d", "2h9h", "2c9c"}, "5d5h5c", "3s3c",
+                {0, 183, 28, 0, 28, 0, 380, 201}});
+		td.emplace_back(TestCase{ {"AA,KK", "KK,QQ", "QQ,AA" }, "", "",
+                {0, 348272820, 119882736, 37653912, 303253020, 74015280, 1266624, 3904200}});
+		return td;
+	}(); // Workaround for MSVC2013's incomplete initializer list support.
 
     void enumTest(const TestCase& tc)
     {
@@ -163,7 +166,7 @@ class EquityCalculatorTest : public ttest::TestBase
                 throw ttest::TestException("Invalid hand ranges!");
         eq.wait();
         auto results = eq.getResults();
-        for (unsigned i = 0; i < (1 << tc.ranges.size()); ++i)
+        for (unsigned i = 0; i < (1u << tc.ranges.size()); ++i)
             TTEST_EQUAL(results.winsByPlayerMask[i], tc.expectedResults[i]);
     }
 
@@ -174,8 +177,8 @@ class EquityCalculatorTest : public ttest::TestBase
         bool timeout = false;
         auto callback = [&](const EquityCalculator::Results& r){
             double maxErr = 0;
-            for (unsigned i = 0; i < (1 << tc.ranges.size()); ++i)
-                maxErr = max(abs(tc.expectedResults[i] / hands - (double) r.winsByPlayerMask[i] / r.hands), maxErr);
+            for (unsigned i = 0; i < (1u << tc.ranges.size()); ++i)
+                maxErr = max(std::abs(tc.expectedResults[i] / hands - (double) r.winsByPlayerMask[i] / r.hands), maxErr);
             if (maxErr < 2e-4)
                 eq.stop();
             if (r.time > 10) {

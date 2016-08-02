@@ -109,7 +109,7 @@ public:
     testEqual(TTEST_ARGTOSTR(EXPR), EXPR, EXPECTED)
 
 // Declares a member function to be called before each test case. Must be followed by function body.
-#define TTEST_BEFORE(DESCRIPTION) \
+#define TTEST_BEFORE() \
     virtual void ttestBefore() override
 
 // Registers and declares a test case member function. Must be followed by function body.
