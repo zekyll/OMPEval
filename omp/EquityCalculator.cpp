@@ -39,6 +39,7 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
     // Set up simulation settings.
     mEnumPosition = 0;
     mBatchSum = mBatchSumSqr = mBatchCount = 0;
+    mResults = Results();
     mResults.players = (unsigned)handRanges.size();
     mResults.enumerateAll = enumerateAll;
     mUpdateResults = mResults;
