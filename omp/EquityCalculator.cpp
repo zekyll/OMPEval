@@ -750,10 +750,10 @@ double EquityCalculator::combineResults(const BatchResults& batch)
     double batchEquity = 0;
 
     for (unsigned i = 0; i < (1u << mResults.players); ++i) {
-        mResults.winsByPlayerMask[i] += batch.winsByPlayerMask[i];
         mResults.intervalHands += batch.winsByPlayerMask[i];
         batchHands += batch.winsByPlayerMask[i];
         unsigned winnerCount = bitCount(i);
+        unsigned actualPlayerMask = 0;
         for (unsigned j = 0; j < mResults.players; ++j) {
             if (i & (1 << j)) {
                 if (winnerCount == 1) {
@@ -765,8 +765,10 @@ double EquityCalculator::combineResults(const BatchResults& batch)
                     if (batch.playerIds[j] == 0)
                         batchEquity += batch.winsByPlayerMask[i] / (double)winnerCount;
                 }
+                actualPlayerMask |= 1 << batch.playerIds[j];
             }
         }
+        mResults.winsByPlayerMask[actualPlayerMask] += batch.winsByPlayerMask[i];
     }
 
     mResults.evaluations += batch.evalCount;
