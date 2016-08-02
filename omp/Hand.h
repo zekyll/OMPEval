@@ -86,12 +86,6 @@ struct Hand
         return EMPTY;
     }
 
-    // Returns the suit counters.
-    unsigned suits() const
-    {
-        return key() >> SUITS_SHIFT;
-    }
-
     // Number of cards for specific suit.
     unsigned suitCount(unsigned suit) const
     {
@@ -110,6 +104,12 @@ private:
     static const unsigned CARD_COUNTER_SHIFT = 48;
     static const unsigned SUITS_SHIFT = 32;
     static const uint64_t FLUSH_CHECK_MASK = 0x8888ull << SUITS_SHIFT;
+
+    // Returns the suit counters.
+    unsigned suits() const
+    {
+        return key() >> SUITS_SHIFT;
+    }
 
     uint64_t key() const
     {

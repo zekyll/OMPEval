@@ -1,12 +1,178 @@
 
 #include "omp/HandEvaluator.h"
+#include "omp/EquityCalculator.h"
 #include "omp/Random.h"
+#include "ttest/ttest.h"
 #include <iostream>
 #include <chrono>
 #include <vector>
 
 using namespace std;
 using namespace omp;
+
+class HandTest : public ttest::TestBase
+{
+    HandEvaluator e;
+
+    TTEST_CASE("empty()")
+	{
+        Hand h = Hand::empty();
+        TTEST_EQUAL(h.count(), 0);
+        TTEST_EQUAL(h.suitCount(0), 0);
+	}
+
+    TTEST_CASE("adding & removing cards")
+	{
+        Hand h = Hand::empty() + Hand(5);
+        TTEST_EQUAL(h.count(), 1);
+        TTEST_EQUAL(h.suitCount(1), 1);
+        h += Hand(51);
+        TTEST_EQUAL(h.count(), 2);
+        TTEST_EQUAL(h.suitCount(0), 0);
+        TTEST_EQUAL(h.suitCount(1), 1);
+        TTEST_EQUAL(h.suitCount(3), 1);
+        h += Hand(3);
+        TTEST_EQUAL(h.count(), 3);
+        TTEST_EQUAL(h.suitCount(0), 0);
+        TTEST_EQUAL(h.suitCount(1), 1);
+        TTEST_EQUAL(h.suitCount(3), 2);
+        h -= Hand(51);
+        TTEST_EQUAL(h.count(), 2);
+        TTEST_EQUAL(h.suitCount(0), 0);
+        TTEST_EQUAL(h.suitCount(1), 1);
+        TTEST_EQUAL(h.suitCount(3), 1);
+        h = h - (Hand(3) + Hand(51));
+        TTEST_EQUAL(h.count(), 0);
+	}
+};
+
+class HandEvaluatorTest : public ttest::TestBase
+{
+    HandEvaluator e;
+    uint64_t counts[10]{};
+
+    void enumerate(unsigned cardsLeft, Hand h = Hand::empty(), unsigned start = 0)
+    {
+        for (unsigned c = start; c < 52; ++c) {
+            if (cardsLeft == 1)
+                ++counts[e.evaluate(h + c) >> HAND_CATEGORY_SHIFT];
+            else
+                enumerate(cardsLeft - 1, h + c, c + 1);
+        }
+    }
+
+    TTEST_BEFORE()
+    {
+        fill(begin(counts), end(counts), 0);
+    }
+
+	TTEST_CASE("0 cards")
+	{
+		TTEST_EQUAL(e.evaluate(Hand::empty()), HAND_CATEGORY_OFFSET + 1);
+	}
+
+    TTEST_CASE("enumerate 1 card hands")
+	{
+        uint64_t expected[10]{0, 52};
+        enumerate(1);
+        for (unsigned i = 0; i < 10; ++i)
+            TTEST_EQUAL(counts[i], expected[i]);
+	}
+
+    TTEST_CASE("enumerate 2 cards hands")
+	{
+        uint64_t expected[10]{0, 1248, 78};
+        enumerate(2);
+        for (unsigned i = 0; i < 10; ++i)
+            TTEST_EQUAL(counts[i], expected[i]);
+	}
+
+    TTEST_CASE("enumerate 3 cards hands")
+	{
+        uint64_t expected[10]{0, 18304, 3744, 0, 52};
+        enumerate(3);
+        for (unsigned i = 0; i < 10; ++i)
+            TTEST_EQUAL(counts[i], expected[i]);
+	}
+
+    TTEST_CASE("enumerate 4 cards hands")
+	{
+        uint64_t expected[10]{0, 183040, 82368, 2808, 2496, 0, 0, 0, 13};
+        enumerate(4);
+        for (unsigned i = 0; i < 10; ++i)
+            TTEST_EQUAL(counts[i], expected[i]);
+	}
+
+    TTEST_CASE("enumerate 5 cards hands")
+	{
+        uint64_t expected[10]{0, 1302540, 1098240, 123552, 54912, 10200, 5108, 3744, 624, 40};
+        enumerate(5);
+        for (unsigned i = 0; i < 10; ++i)
+            TTEST_EQUAL(counts[i], expected[i]);
+	}
+
+    TTEST_CASE("enumerate 6 cards hands")
+	{
+        uint64_t expected[10]{0, 6612900, 9730740, 2532816, 732160, 361620, 205792, 165984, 14664, 1844};
+        enumerate(6);
+        for (unsigned i = 0; i < 10; ++i)
+            TTEST_EQUAL(counts[i], expected[i]);
+	}
+
+    TTEST_CASE("enumerate 7 cards hands")
+	{
+        uint64_t expected[10]{0, 23294460, 58627800, 31433400, 6461620, 6180020, 4047644,
+                3473184, 224848, 41584};
+        enumerate(7);
+        for (unsigned i = 0; i < 10; ++i)
+            TTEST_EQUAL(counts[i], expected[i]);
+	}
+};
+
+class EquityCalculatorTest : public ttest::TestBase
+{
+    EquityCalculator eq;
+
+    struct TestCase
+    {
+        vector<string> ranges;
+        string board, dead;
+        vector<uint64_t> expectedResults;
+    };
+
+    const vector<TestCase> TESTDATA = {
+        {{"AA", "KK"}, "", "",
+            {0, 10986372, 50371344, 285228}},
+        {{"AK", "random"}, "2c3c", "",
+            {0, 107934785, 159800118, 6233737}},
+        {{"random", "AA", "33"}, "2c3c8h", "6h",
+            {0, 12075780, 884235, 0, 1681017, 0, 20076, 0}},
+        {{"random", "random", "AK"}, "4hAd3c4c7c", "6h",
+            {0, 1461364, 1461364, 6386, 6760010, 42420, 42420, 108}},
+        {{"3d7d", "2h9h", "2c9c"}, "5d5h5c", "3s3c",
+            {0, 183, 28, 0, 28, 0, 380, 201}},
+        {{"AA,KK", "KK,QQ", "QQ,AA"}, "", "",
+            {0, 121457232, 108949068, 1700352, 541002276, 0, 111235464, 3904200}},
+    };
+
+    void enumTest(const TestCase& tc)
+    {
+        std::vector<CardRange> ranges2(tc.ranges.begin(), tc.ranges.end());
+        if (!eq.start(ranges2, CardRange::getCardMask(tc.board), CardRange::getCardMask(tc.dead), true))
+                cout << "error!" << endl;
+        eq.wait();
+        auto results = eq.getResults();
+        for (unsigned i = 0; i < (1 << tc.ranges.size()); ++i)
+            TTEST_EQUAL(results.winsByPlayerMask[i], tc.expectedResults[i]);
+    }
+
+    TTEST_CASE("enumaration test 1") { enumTest(TESTDATA[0]); }
+    TTEST_CASE("enumaration test 2") { enumTest(TESTDATA[1]); }
+    TTEST_CASE("enumaration test 3") { enumTest(TESTDATA[2]); }
+    TTEST_CASE("enumaration test 4") { enumTest(TESTDATA[3]); }
+    TTEST_CASE("enumaration test 5") { enumTest(TESTDATA[4]); }
+    TTEST_CASE("enumaration test 6") { enumTest(TESTDATA[5]); }
+};
 
 // Evaluating hands in sequential order.
 void sequentialEvaluationBenchmark()
@@ -127,6 +293,15 @@ void randomEvaluationBenchmark2()
 
 int main()
 {
+    cout << "=== Tests ===" << endl;
+    cout << "Hand:" << endl;
+    HandTest().run();
+    cout << "HandEvaluator:" << endl;
+    HandEvaluatorTest().run();
+    cout << "EquityCalculator:" << endl;
+    EquityCalculatorTest().run();
+
+    cout << endl << endl << "=== Benchmarks ===" << endl;
     sequentialEvaluationBenchmark();
     randomEvaluationBenchmark();
     randomEvaluationBenchmark2();

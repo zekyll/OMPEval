@@ -15,6 +15,7 @@ static const unsigned BOARD_CARDS = 5;
 static const unsigned COMBO_COUNT = 1326;
 
 static const unsigned HAND_CATEGORY_OFFSET = 0x1000; // 4096
+static const unsigned HAND_CATEGORY_SHIFT = 12;
 static const unsigned HIGH_CARD = 1 * HAND_CATEGORY_OFFSET;
 static const unsigned PAIR = 2 * HAND_CATEGORY_OFFSET;
 static const unsigned TWO_PAIR = 3 * HAND_CATEGORY_OFFSET;
