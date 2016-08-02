@@ -14,8 +14,6 @@ using namespace omp;
 
 class HandTest : public ttest::TestBase
 {
-    HandEvaluator e;
-
     TTEST_CASE("empty()")
 	{
         Hand h = Hand::empty();

@@ -45,6 +45,8 @@ private:
         return key + PERF_HASH_ROW_OFFSETS[key >> PERF_HASH_ROW_SHIFT];
     }
 
+    static bool cardInit;
+    static void initCardConstants();
     static void staticInit();
     static void calculatePerfectHash();
     static unsigned populateLookup(uint64_t rankCounts, unsigned ncards, unsigned handValue, unsigned endRank,
