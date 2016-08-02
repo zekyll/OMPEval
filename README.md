@@ -9,7 +9,7 @@ OMPEval is a fast C++ hand evaluator and equity calculator for Texas Holdem poke
 - Has relatively low memory usage (400kB lookup tables) and initialization time (~10ms).
 - Can be compiled for both 32- and 64-bit platforms but has 50% better performance on 64bit.
 
-Below is a performance comparison with two other hand evaluators (SKPokerEval and 2+2 Evaluator). Benchmarks were done on Intel 3770k using a single thread. Results are in millions of evaluations per second. **Seq**: sequential evaluation performance. **Rand1**: evaluation from a pregenerated array of random hands (7 x uint8). **Rand2**: evaluation from an array of random Hand objects.
+Below is a performance comparison with three other hand evaluators ([SKPokerEval](https://github.com/kennethshackleton/SKPokerEval), [2+2 Evaluator](https://github.com/tangentforks/TwoPlusTwoHandEvaluator) and [ACE Evaluator](https://github.com/ashelly/ACE_eval)). Benchmarks were done on Intel 3770k using a single thread. Results are in millions of evaluations per second. **Seq**: sequential evaluation performance. **Rand1**: evaluation from a pregenerated array of random hands (7 x uint8). **Rand2**: evaluation from an array of random Hand objects.
 ```
         TDMGCC5.1 64bit        TDMGCC5.1 32bit        VC2013 64bit
         OMP  SKPE  2+2   ACE   OMP  SKPE  2+2   ACE   OMP  SKPE  2+2   ACE
