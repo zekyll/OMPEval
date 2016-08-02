@@ -178,7 +178,7 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
             uint64_t mask = 0;
             do {
                 if (comboIdx == 0)
-                    comboIdx = combinedRange.size();
+                    comboIdx = (unsigned)combinedRange.size();
                 --comboIdx;
                 mask = combinedRange.combos()[comboIdx].cardMask;
             } while (mask & usedCardsMask);
@@ -575,7 +575,7 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
     for (unsigned i = 0; i < CARD_COUNT; ++i) {
         if ((*boardCards >> i) & 1) {
             unsigned suit = i & SUIT_MASK;
-            if (transform[suit] == ~0)
+            if (transform[suit] == ~0u)
                 transform[suit] = suitCount++;
             unsigned newCard = (i & RANK_MASK) | transform[suit];
             newBoardCards |= 1ull << newCard;
@@ -587,7 +587,7 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
     for (unsigned i = 0; i < CARD_COUNT; ++i) {
         if ((*deadCards >> i) & 1) {
             unsigned suit = i & SUIT_MASK;
-            if (transform[suit] == ~0)
+            if (transform[suit] == ~0u)
                 transform[suit] = suitCount++;
             unsigned newCard = (i & RANK_MASK) | transform[suit];
             newDeadCards |= 1ull << newCard;
@@ -599,7 +599,7 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
     for (unsigned i = 0; i < nplayers; ++i) {
         for (uint8_t& c : playerHands[i].cards) {
             unsigned suit = c & SUIT_MASK;
-            if (transform[suit] == ~0)
+            if (transform[suit] == ~0u)
                 transform[suit] = suitCount++;
             c = (c & RANK_MASK) | transform[suit];
         }

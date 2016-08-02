@@ -114,7 +114,7 @@ unsigned HandEvaluator::populateLookup(uint64_t ranks, unsigned ncards, unsigned
         ++handValue;
 
     // Write hand value to lookup when we have required number of cards.
-    if (ncards >= MIN_CARDS || flush && ncards >= 5) {
+    if (ncards >= MIN_CARDS || (flush && ncards >= 5)) {
         unsigned key = getKey(ranks, flush);
 
         // Write flush and non-flush hands in different tables
@@ -162,7 +162,7 @@ unsigned HandEvaluator::getKey(uint64_t ranks, bool flush)
 // Returns index of the highest straight card or 0 when no straight.
 unsigned HandEvaluator::getBiggestStraight(uint64_t ranks)
 {
-    uint64_t rankMask = 0x1111111111111 & ranks| (0x2222222222222 & ranks) >> 1 | (0x4444444444444 & ranks) >> 2;
+    uint64_t rankMask = (0x1111111111111 & ranks) | (0x2222222222222 & ranks) >> 1 | (0x4444444444444 & ranks) >> 2;
     for (unsigned i = 9; i-- > 0; )
         if (((rankMask >> 4 * i) & 0x11111ull) == 0x11111ull)
             return i + 4;
