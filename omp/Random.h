@@ -3,7 +3,6 @@
 
 #include "../libdivide/libdivide.h"
 #include <cstdint>
-#include <random>
 
 namespace omp {
 
@@ -29,6 +28,16 @@ public:
         return result;
     }
 
+    static uint64_t min()
+    {
+        return 0;
+    }
+
+    static uint64_t max()
+    {
+        return ~(uint64_t)0;
+    }
+
 private:
     static uint64_t rotl(uint64_t x, unsigned k)
     {
@@ -37,35 +46,6 @@ private:
     }
 
     uint64_t mState[2];
-};
-
-// Wrapper for mt19937_64 that only extracts specified number of bits at a time.
-template<unsigned tBits, typename T = uint32_t>
-class BitRng
-{
-public:
-    BitRng()
-        : mRng(std::random_device{}()),
-          mBufferBitsLeft(0)
-    {
-    }
-
-    T operator()()
-    {
-        if (mBufferBitsLeft < tBits) {
-            mBuffer = mRng();
-            mBufferBitsLeft = sizeof(mBuffer) * CHAR_BIT;
-        }
-        T ret = (T)mBuffer & (((T)1 << tBits) - (T)1);
-        mBuffer >>= tBits;
-        mBufferBitsLeft -= tBits;
-        return ret;
-    }
-
-private:
-    std::mt19937_64 mRng;
-    uint64_t mBuffer;
-    unsigned mBufferBitsLeft;
 };
 
 // Generates non-repeating pseudo random numbers in specified range using a linear congruential generator.

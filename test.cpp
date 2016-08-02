@@ -1,8 +1,9 @@
 
 #include "omp/HandEvaluator.h"
+#include "omp/Random.h"
 #include <iostream>
 #include <chrono>
-#include <random>
+#include <vector>
 
 using namespace std;
 using namespace omp;
@@ -49,8 +50,8 @@ void sequentialEvaluationBenchmark()
 void randomEvaluationBenchmark()
 {
     cout << endl << "Random order evaluation (precalculated Hand objects):" << endl;
-    mt19937_64 rng(0);
-    uniform_int_distribution<unsigned> rnd(0, 51);
+    XoroShiro128Plus rng(0);
+    FastUniformIntDistribution<unsigned> rnd(0, 51);
     HandEvaluator eval;
     uint64_t count = 0;
     unsigned sum = 0;
@@ -89,8 +90,8 @@ void randomEvaluationBenchmark()
 void randomEvaluationBenchmark2()
 {
     cout << endl << "Random order evaluation (card arrays):" << endl;
-    mt19937_64 rng(0);
-    uniform_int_distribution<unsigned> rnd(0, 51);
+    XoroShiro128Plus rng(0);
+    FastUniformIntDistribution<unsigned> rnd(0, 51);
     HandEvaluator eval;
     uint64_t count = 0;
     unsigned sum = 0;
