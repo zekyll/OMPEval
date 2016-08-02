@@ -568,27 +568,29 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
 
     //TODO transform fixed cards before main enumeration loop.
 
+    uint64_t newBoardCards = 0;
     for (unsigned i = 0; i < CARD_COUNT; ++i) {
         if ((*boardCards >> i) & 1) {
             unsigned suit = i & SUIT_MASK;
             if (transform[suit] == ~0)
                 transform[suit] = suitCount++;
             unsigned newCard = (i & RANK_MASK) | transform[suit];
-            *boardCards ^= 1ull << i;
-            *boardCards |= 1ull << newCard;
+            newBoardCards |= 1ull << newCard;
         }
     }
+    *boardCards = newBoardCards;
 
+    uint64_t newDeadCards = 0;
     for (unsigned i = 0; i < CARD_COUNT; ++i) {
         if ((*deadCards >> i) & 1) {
             unsigned suit = i & SUIT_MASK;
             if (transform[suit] == ~0)
                 transform[suit] = suitCount++;
             unsigned newCard = (i & RANK_MASK) | transform[suit];
-            *deadCards ^= 1ull << i;
-            *deadCards |= 1ull << newCard;
+            newDeadCards |= 1ull << newCard;
         }
     }
+    *deadCards = newDeadCards;
 
     // Holecards need to be handled after any fixed cards, because the lookup is only based on them.
     for (unsigned i = 0; i < nplayers; ++i) {
