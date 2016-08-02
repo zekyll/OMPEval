@@ -2,6 +2,7 @@
 
 #include "Util.h"
 #include "../libdivide/libdivide.h"
+#include <random>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -38,6 +39,7 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
     // Set up simulation settings.
     mEnumPosition = 0;
     mBatchSum = mBatchSumSqr = mBatchCount = 0;
+    mResults = Results();
     mResults.players = (unsigned)handRanges.size();
     mResults.enumerateAll = enumerateAll;
     mUpdateResults = mResults;
@@ -176,7 +178,7 @@ void EquityCalculator::simulateRandomWalkMonteCarlo()
             uint64_t mask = 0;
             do {
                 if (comboIdx == 0)
-                    comboIdx = combinedRange.size();
+                    comboIdx = (unsigned)combinedRange.size();
                 --comboIdx;
                 mask = combinedRange.combos()[comboIdx].cardMask;
             } while (mask & usedCardsMask);
@@ -573,7 +575,7 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
     for (unsigned i = 0; i < CARD_COUNT; ++i) {
         if ((*boardCards >> i) & 1) {
             unsigned suit = i & SUIT_MASK;
-            if (transform[suit] == ~0)
+            if (transform[suit] == ~0u)
                 transform[suit] = suitCount++;
             unsigned newCard = (i & RANK_MASK) | transform[suit];
             newBoardCards |= 1ull << newCard;
@@ -585,7 +587,7 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
     for (unsigned i = 0; i < CARD_COUNT; ++i) {
         if ((*deadCards >> i) & 1) {
             unsigned suit = i & SUIT_MASK;
-            if (transform[suit] == ~0)
+            if (transform[suit] == ~0u)
                 transform[suit] = suitCount++;
             unsigned newCard = (i & RANK_MASK) | transform[suit];
             newDeadCards |= 1ull << newCard;
@@ -597,7 +599,7 @@ unsigned EquityCalculator::transformSuits(HandWithPlayerIdx* playerHands, unsign
     for (unsigned i = 0; i < nplayers; ++i) {
         for (uint8_t& c : playerHands[i].cards) {
             unsigned suit = c & SUIT_MASK;
-            if (transform[suit] == ~0)
+            if (transform[suit] == ~0u)
                 transform[suit] = suitCount++;
             c = (c & RANK_MASK) | transform[suit];
         }
@@ -748,10 +750,10 @@ double EquityCalculator::combineResults(const BatchResults& batch)
     double batchEquity = 0;
 
     for (unsigned i = 0; i < (1u << mResults.players); ++i) {
-        mResults.winsByPlayerMask[i] += batch.winsByPlayerMask[i];
         mResults.intervalHands += batch.winsByPlayerMask[i];
         batchHands += batch.winsByPlayerMask[i];
         unsigned winnerCount = bitCount(i);
+        unsigned actualPlayerMask = 0;
         for (unsigned j = 0; j < mResults.players; ++j) {
             if (i & (1 << j)) {
                 if (winnerCount == 1) {
@@ -763,8 +765,10 @@ double EquityCalculator::combineResults(const BatchResults& batch)
                     if (batch.playerIds[j] == 0)
                         batchEquity += batch.winsByPlayerMask[i] / (double)winnerCount;
                 }
+                actualPlayerMask |= 1 << batch.playerIds[j];
             }
         }
+        mResults.winsByPlayerMask[actualPlayerMask] += batch.winsByPlayerMask[i];
     }
 
     mResults.evaluations += batch.evalCount;

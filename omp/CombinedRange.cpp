@@ -1,8 +1,9 @@
 #include "CombinedRange.h"
 
-#include <random>
+#include "Random.h"
 #include <algorithm>
 #include <cassert>
+#include <random>
 
 namespace omp {
 
@@ -95,7 +96,7 @@ std::vector<CombinedRange> CombinedRange::joinRanges(
 
 void CombinedRange::shuffle()
 {
-    std::mt19937_64 rng(std::random_device{}());
+    XoroShiro128Plus rng(std::random_device{}());
     std::shuffle(mCombos.begin(), mCombos.end(), rng);
 }
 

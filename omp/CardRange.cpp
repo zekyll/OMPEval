@@ -60,7 +60,7 @@ uint64_t CardRange::getCardMask(const std::string& text)
     for (size_t i = 0; i < s.size() - std::min<size_t>(1, s.size()); i += 2) {
         unsigned rank = charToRank(s[i]);
         unsigned suit = charToSuit(s[i + 1]);
-        if (rank == ~0 || suit == ~0)
+        if (rank == ~0u || suit == ~0u)
             break;
         unsigned card = 4 * rank + suit;
         cards |= 1ull << card;
@@ -182,7 +182,7 @@ void CardRange::addAll()
 void CardRange::addCombo(unsigned c1, unsigned c2)
 {
     omp_assert(c1 != c2);
-    if (c1 >> 2 < c2 >> 2 || c1 >> 2 == c2 >> 2 && (c1 & 3) < (c2 & 3))
+    if (c1 >> 2 < c2 >> 2 || (c1 >> 2 == c2 >> 2 && (c1 & 3) < (c2 & 3)))
         std::swap(c1, c2);
     mCombinations.emplace_back(std::array<uint8_t,2>{(uint8_t)c1, (uint8_t)c2});
 }
