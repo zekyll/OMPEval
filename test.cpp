@@ -6,6 +6,7 @@
 #include <iostream>
 #include <chrono>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 using namespace omp;
@@ -159,19 +160,49 @@ class EquityCalculatorTest : public ttest::TestBase
     {
         std::vector<CardRange> ranges2(tc.ranges.begin(), tc.ranges.end());
         if (!eq.start(ranges2, CardRange::getCardMask(tc.board), CardRange::getCardMask(tc.dead), true))
-                cout << "error!" << endl;
+                throw ttest::TestException("Invalid hand ranges!");
         eq.wait();
         auto results = eq.getResults();
         for (unsigned i = 0; i < (1 << tc.ranges.size()); ++i)
             TTEST_EQUAL(results.winsByPlayerMask[i], tc.expectedResults[i]);
     }
 
-    TTEST_CASE("enumaration test 1") { enumTest(TESTDATA[0]); }
-    TTEST_CASE("enumaration test 2") { enumTest(TESTDATA[1]); }
-    TTEST_CASE("enumaration test 3") { enumTest(TESTDATA[2]); }
-    TTEST_CASE("enumaration test 4") { enumTest(TESTDATA[3]); }
-    TTEST_CASE("enumaration test 5") { enumTest(TESTDATA[4]); }
-    TTEST_CASE("enumaration test 6") { enumTest(TESTDATA[5]); }
+    void monteCarloTest(const TestCase& tc)
+    {
+        double hands = accumulate(tc.expectedResults.begin(), tc.expectedResults.end(), 0);
+        std::vector<CardRange> ranges2(tc.ranges.begin(), tc.ranges.end());
+        bool timeout = false;
+        auto callback = [&](const EquityCalculator::Results& r){
+            double maxErr = 0;
+            for (unsigned i = 0; i < (1 << tc.ranges.size()); ++i)
+                maxErr = max(abs(tc.expectedResults[i] / hands - (double) r.winsByPlayerMask[i] / r.hands), maxErr);
+            if (maxErr < 2e-4)
+                eq.stop();
+            if (r.time > 10) {
+                timeout = true;
+                eq.stop();
+            }
+        };
+        if (!eq.start(ranges2, CardRange::getCardMask(tc.board), CardRange::getCardMask(tc.dead),
+                false, 0, callback, 0.1))
+            throw ttest::TestException("Invalid hand ranges!");
+        eq.wait();
+        if (timeout)
+            throw ttest::TestException("Didn't converge to correct results in time!");
+    }
+
+    TTEST_CASE("test 1 - enumeration") { enumTest(TESTDATA[0]); }
+    TTEST_CASE("test 1 - monte carlo") { monteCarloTest(TESTDATA[0]); }
+    TTEST_CASE("test 2 - enumeration") { enumTest(TESTDATA[1]); }
+    TTEST_CASE("test 2 - monte carlo") { monteCarloTest(TESTDATA[1]); }
+    TTEST_CASE("test 3 - enumeration") { enumTest(TESTDATA[2]); }
+    TTEST_CASE("test 3 - monte carlo") { monteCarloTest(TESTDATA[2]); }
+    TTEST_CASE("test 4 - enumeration") { enumTest(TESTDATA[3]); }
+    TTEST_CASE("test 4 - monte carlo") { monteCarloTest(TESTDATA[3]); }
+    TTEST_CASE("test 5 - enumeration") { enumTest(TESTDATA[4]); }
+    TTEST_CASE("test 5 - monte carlo") { monteCarloTest(TESTDATA[4]); }
+    TTEST_CASE("test 6 - enumeration") { enumTest(TESTDATA[5]); }
+    TTEST_CASE("test 6 - monte carlo") { monteCarloTest(TESTDATA[5]); }
 };
 
 // Evaluating hands in sequential order.
