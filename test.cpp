@@ -17,32 +17,32 @@ class HandTest : public ttest::TestBase
     TTEST_CASE("empty()")
 	{
         Hand h = Hand::empty();
-        TTEST_EQUAL(h.count(), 0);
-        TTEST_EQUAL(h.suitCount(0), 0);
+        TTEST_EQUAL(h.count(), 0u);
+        TTEST_EQUAL(h.suitCount(0), 0u);
 	}
 
     TTEST_CASE("adding & removing cards")
 	{
         Hand h = Hand::empty() + Hand(5);
-        TTEST_EQUAL(h.count(), 1);
-        TTEST_EQUAL(h.suitCount(1), 1);
+        TTEST_EQUAL(h.count(), 1u);
+        TTEST_EQUAL(h.suitCount(1), 1u);
         h += Hand(51);
-        TTEST_EQUAL(h.count(), 2);
-        TTEST_EQUAL(h.suitCount(0), 0);
-        TTEST_EQUAL(h.suitCount(1), 1);
-        TTEST_EQUAL(h.suitCount(3), 1);
+        TTEST_EQUAL(h.count(), 2u);
+        TTEST_EQUAL(h.suitCount(0), 0u);
+        TTEST_EQUAL(h.suitCount(1), 1u);
+        TTEST_EQUAL(h.suitCount(3), 1u);
         h += Hand(3);
-        TTEST_EQUAL(h.count(), 3);
-        TTEST_EQUAL(h.suitCount(0), 0);
-        TTEST_EQUAL(h.suitCount(1), 1);
-        TTEST_EQUAL(h.suitCount(3), 2);
+        TTEST_EQUAL(h.count(), 3u);
+        TTEST_EQUAL(h.suitCount(0), 0u);
+        TTEST_EQUAL(h.suitCount(1), 1u);
+        TTEST_EQUAL(h.suitCount(3), 2u);
         h -= Hand(51);
-        TTEST_EQUAL(h.count(), 2);
-        TTEST_EQUAL(h.suitCount(0), 0);
-        TTEST_EQUAL(h.suitCount(1), 1);
-        TTEST_EQUAL(h.suitCount(3), 1);
+        TTEST_EQUAL(h.count(), 2u);
+        TTEST_EQUAL(h.suitCount(0), 0u);
+        TTEST_EQUAL(h.suitCount(1), 1u);
+        TTEST_EQUAL(h.suitCount(3), 1u);
         h = h - (Hand(3) + Hand(51));
-        TTEST_EQUAL(h.count(), 0);
+        TTEST_EQUAL(h.count(), 0u);
 	}
 };
 

@@ -29,7 +29,7 @@ bool HandEvaluator::cardInit = (initCardConstants(), true);
 // Does a thread-safe (guaranteed by C++11) one time initialization of static data.
 HandEvaluator::HandEvaluator()
 {
-    static bool initDone = (staticInit(), true);
+    static bool initVar = (staticInit(), initVar);
 }
 
 // Initialize card constants.
