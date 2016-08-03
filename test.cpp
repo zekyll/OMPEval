@@ -195,6 +195,7 @@ class EquityCalculatorTest : public ttest::TestBase
     TTEST_BEFORE()
     {
         eq.setTimeLimit(0);
+        eq.setHandLimit(0);
     }
 
     TTEST_CASE("test 1 - enumeration") { enumTest(TESTDATA[0]); }
@@ -214,13 +215,27 @@ class EquityCalculatorTest : public ttest::TestBase
     {
         eq.setTimeLimit(0.5);
         auto callback = [&](const EquityCalculator::Results& r){
-            if (r.time >= 1)
+            if (r.time >= 2)
                 eq.stop();
         };
-        eq.start({"random", "random"}, 0, 0, false, 0, callback, 0.01);
+        eq.start({"random", "random"}, 0, 0, false, 0, callback, 1.0);
         eq.wait();
         auto r = eq.getResults();
         TTEST_EQUAL(r.time >= 0.45 && r.time <= 0.55, true);
+    }
+
+    TTEST_CASE("hand limit")
+    {
+        eq.setHandLimit(3e6);
+        auto callback = [&](const EquityCalculator::Results& r){
+            if (r.time >= 2)
+                eq.stop();
+        };
+        eq.start({"random", "random"}, 0, 0, false, 0, callback, 1.0);
+        eq.wait();
+        auto r = eq.getResults();
+        cout << r.time << endl;
+        TTEST_EQUAL(r.hands >= 3e6 && r.hands <= 3e6 + 16 * 0x1000, true);
     }
 };
 

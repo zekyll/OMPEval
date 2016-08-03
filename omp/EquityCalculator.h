@@ -92,7 +92,14 @@ public:
     void setTimeLimit(double seconds)
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        mTimeLimit = seconds <= 0 ? INFINITE_TIME : seconds;
+        mTimeLimit = seconds <= 0 ? INFINITE : seconds;
+    }
+
+    // Set a hand limit for the calculation or 0 to disable. Disabled by default.
+    void setHandLimit(uint64_t handLimit)
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        mHandLimit = handLimit == 0 ? INFINITE : handLimit;
     }
 
     // Get results from previous update.
@@ -113,7 +120,7 @@ private:
 
     static const size_t MAX_LOOKUP_SIZE = 1000000;
     static const size_t MAX_COMBINED_RANGE_SIZE = 10000;
-    static const uint64_t INFINITE_TIME = ~0ull;
+    static const uint64_t INFINITE = ~0ull;
 
     // Temporary storage for results.
     struct BatchResults
@@ -189,7 +196,8 @@ private:
     unsigned mCombinedRangeCount;
     uint64_t mDeadCards, mBoardCards;
     HandEvaluator mEval;
-    double mStdevTarget = 5e-5, mTimeLimit = INFINITE_TIME, mUpdateInterval = 0.1;
+    double mStdevTarget = 5e-5, mTimeLimit = INFINITE, mUpdateInterval = 0.1;
+    uint64_t mHandLimit = INFINITE;
     std::function<void(const Results& results)> mCallback;
 
     // Precalculated results for 2 player preflop situations. Uses a sorted array for lowest memory use.
