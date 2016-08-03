@@ -706,8 +706,11 @@ void EquityCalculator::updateResults(const BatchResults& stats, bool threadFinis
 
     mResults.finished = threadFinished && --mUnfinishedThreads == 0;
 
-    // Periodic update through callback/signal.
     double dt = 1e-9 * std::chrono::duration_cast<std::chrono::nanoseconds>(t - mLastUpdate).count();
+    if (mResults.time + dt >= mTimeLimit)
+        mStopped = true;
+
+    // Periodic update through callback.
     if (dt >= mUpdateInterval || mResults.finished) {
         mResults.intervalTime = dt;
         mResults.time += mResults.intervalTime;

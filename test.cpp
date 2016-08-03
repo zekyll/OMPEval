@@ -192,6 +192,11 @@ class EquityCalculatorTest : public ttest::TestBase
             throw ttest::TestException("Didn't converge to correct results in time!");
     }
 
+    TTEST_BEFORE()
+    {
+        eq.setTimeLimit(0);
+    }
+
     TTEST_CASE("test 1 - enumeration") { enumTest(TESTDATA[0]); }
     TTEST_CASE("test 1 - monte carlo") { monteCarloTest(TESTDATA[0]); }
     TTEST_CASE("test 2 - enumeration") { enumTest(TESTDATA[1]); }
@@ -204,6 +209,19 @@ class EquityCalculatorTest : public ttest::TestBase
     TTEST_CASE("test 5 - monte carlo") { monteCarloTest(TESTDATA[4]); }
     TTEST_CASE("test 6 - enumeration") { enumTest(TESTDATA[5]); }
     TTEST_CASE("test 6 - monte carlo") { monteCarloTest(TESTDATA[5]); }
+
+    TTEST_CASE("time limit")
+    {
+        eq.setTimeLimit(0.5);
+        auto callback = [&](const EquityCalculator::Results& r){
+            if (r.time >= 1)
+                eq.stop();
+        };
+        eq.start({"random", "random"}, 0, 0, false, 0, callback, 0.01);
+        eq.wait();
+        auto r = eq.getResults();
+        TTEST_EQUAL(r.time >= 0.45 && r.time <= 0.55, true);
+    }
 };
 
 // Evaluating hands in sequential order.
