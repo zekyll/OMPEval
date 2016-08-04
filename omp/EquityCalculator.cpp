@@ -326,7 +326,7 @@ void EquityCalculator::enumerate()
             if (useLookup) {
                 // Sort players based on their hand.
                 std::sort(playerHands, playerHands + nplayers, [](const HandWithPlayerIdx& lhs,
-                          HandWithPlayerIdx& rhs){
+                          const HandWithPlayerIdx& rhs){
                     if (lhs.cards[0] >> 2 != rhs.cards[0] >> 2)
                         return lhs.cards[0] >> 2 < rhs.cards[0] >> 2;
                     if (lhs.cards[1] >> 2 != rhs.cards[1] >> 2)
