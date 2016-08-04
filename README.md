@@ -7,7 +7,7 @@ OMPEval is a fast C++ hand evaluator and equity calculator for Texas Holdem poke
 - Multiple cards are combined in Hand objects which makes the actual evaluation fast and allows caching of partial hand data.
 - Evaluator gives each hand 16-bit integer ranking, which can be used for comparing hands (bigger is better). The quotient when dividing with 4096 also gives the hand category.
 - Has relatively low memory usage (400kB lookup tables) and initialization time (~10ms).
-- Can be compiled for both 32- and 64-bit platforms but has 50% better performance on 64bit.
+- Can be compiled for both 32- and 64-bit platforms but has 50% better performance on 64sbit. On x64 the evaluator also takes advantage of SSE4 if enabled by compiler flags.
 
 Below is a performance comparison with three other hand evaluators ([SKPokerEval](https://github.com/kennethshackleton/SKPokerEval), [2+2 Evaluator](https://github.com/tangentforks/TwoPlusTwoHandEvaluator) and [ACE Evaluator](https://github.com/ashelly/ACE_eval)). Benchmarks were done on Intel 3770k using a single thread. Results are in millions of evaluations per second. **Seq**: sequential evaluation performance. **Rand1**: evaluation from a pregenerated array of random hands (7 x uint8). **Rand2**: evaluation from an array of random Hand objects.
 ```
@@ -85,7 +85,7 @@ int main()
 ```
 
 ## Building
-No makefile, project files or binaries are currently provided, so you will have to compile everything manually. The code has been tested on MSVC2013 and TDM-GCC 5.1.0.
+To build a static library (./lib/ompeval.a) on Unix systems, use `make`. To enable SSE4 support, use `make SSE4=1`. Run tests with `./test`. For Windows there's currently no build files, so you will have to compile everything manually. The code has been tested with MSVC2013, TDM-GCC 5.1.0 and MinGW64 6.1 on Windows, and with g++ 4.8 on Debian.
 
 ## About the algorithms used
 
