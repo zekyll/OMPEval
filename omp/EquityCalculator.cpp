@@ -18,7 +18,7 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
         return false;
     if (bitCount(boardCards) > BOARD_CARDS)
         return false;
-    if (2 * handRanges.size() + bitCount(boardCards | deadCards) + BOARD_CARDS > CARD_COUNT)
+    if (2 * handRanges.size() + bitCount(deadCards) + BOARD_CARDS > CARD_COUNT)
         return false;
 
     // Set up card ranges.
