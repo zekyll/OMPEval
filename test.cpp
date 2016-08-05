@@ -4,7 +4,6 @@
 #include "omp/Random.h"
 #include "ttest/ttest.h"
 #include <iostream>
-#include <chrono>
 #include <vector>
 #include <numeric>
 #include <cmath>
@@ -14,37 +13,35 @@ using namespace omp;
 
 class HandTest : public ttest::TestBase
 {
-    HandEvaluator e;
-
     TTEST_CASE("empty()")
 	{
         Hand h = Hand::empty();
-        TTEST_EQUAL(h.count(), 0);
-        TTEST_EQUAL(h.suitCount(0), 0);
+        TTEST_EQUAL(h.count(), 0u);
+        TTEST_EQUAL(h.suitCount(0), 0u);
 	}
 
     TTEST_CASE("adding & removing cards")
 	{
         Hand h = Hand::empty() + Hand(5);
-        TTEST_EQUAL(h.count(), 1);
-        TTEST_EQUAL(h.suitCount(1), 1);
+        TTEST_EQUAL(h.count(), 1u);
+        TTEST_EQUAL(h.suitCount(1), 1u);
         h += Hand(51);
-        TTEST_EQUAL(h.count(), 2);
-        TTEST_EQUAL(h.suitCount(0), 0);
-        TTEST_EQUAL(h.suitCount(1), 1);
-        TTEST_EQUAL(h.suitCount(3), 1);
+        TTEST_EQUAL(h.count(), 2u);
+        TTEST_EQUAL(h.suitCount(0), 0u);
+        TTEST_EQUAL(h.suitCount(1), 1u);
+        TTEST_EQUAL(h.suitCount(3), 1u);
         h += Hand(3);
-        TTEST_EQUAL(h.count(), 3);
-        TTEST_EQUAL(h.suitCount(0), 0);
-        TTEST_EQUAL(h.suitCount(1), 1);
-        TTEST_EQUAL(h.suitCount(3), 2);
+        TTEST_EQUAL(h.count(), 3u);
+        TTEST_EQUAL(h.suitCount(0), 0u);
+        TTEST_EQUAL(h.suitCount(1), 1u);
+        TTEST_EQUAL(h.suitCount(3), 2u);
         h -= Hand(51);
-        TTEST_EQUAL(h.count(), 2);
-        TTEST_EQUAL(h.suitCount(0), 0);
-        TTEST_EQUAL(h.suitCount(1), 1);
-        TTEST_EQUAL(h.suitCount(3), 1);
+        TTEST_EQUAL(h.count(), 2u);
+        TTEST_EQUAL(h.suitCount(0), 0u);
+        TTEST_EQUAL(h.suitCount(1), 1u);
+        TTEST_EQUAL(h.suitCount(3), 1u);
         h = h - (Hand(3) + Hand(51));
-        TTEST_EQUAL(h.count(), 0);
+        TTEST_EQUAL(h.count(), 0u);
 	}
 };
 
@@ -194,6 +191,69 @@ class EquityCalculatorTest : public ttest::TestBase
             throw ttest::TestException("Didn't converge to correct results in time!");
     }
 
+    TTEST_BEFORE()
+    {
+        eq.setTimeLimit(0);
+        eq.setHandLimit(0);
+    }
+
+    TTEST_CASE("time limit")
+    {
+        eq.setTimeLimit(0.5);
+        auto callback = [&](const EquityCalculator::Results& r){
+            if (r.time >= 2)
+                eq.stop();
+        };
+        eq.start({"random", "random"}, 0, 0, false, 0, callback, 1.0);
+        eq.wait();
+        auto r = eq.getResults();
+        TTEST_EQUAL(r.time >= 0.45 && r.time <= 0.55, true);
+    }
+
+    TTEST_CASE("hand limit")
+    {
+        eq.setHandLimit(3e6);
+        auto callback = [&](const EquityCalculator::Results& r){
+            if (r.time >= 2)
+                eq.stop();
+        };
+        eq.start({"random", "random"}, 0, 0, false, 0, callback, 1.0);
+        eq.wait();
+        auto r = eq.getResults();
+        TTEST_EQUAL(r.hands >= 3e6 && r.hands <= 3e6 + 16 * 0x1000, true);
+    }
+
+    TTEST_CASE("start() returns false when too many board cards")
+    {
+        TTEST_EQUAL(eq.start({"random"}, CardRange::getCardMask("2c3c4c5c6c7c")), false);
+    }
+
+    TTEST_CASE("start() returns false when too many players")
+    {
+        TTEST_EQUAL(eq.start({"AA", "KK", "QQ", "JJ", "TT", "99", "88"}), false);
+    }
+
+    TTEST_CASE("start() returns false when too few cards left in the deck")
+    {
+        // 2*2 + (4 + 1) + 43 = 52
+        TTEST_EQUAL(eq.start({"33", "33"}, 0xf, 0xffffffffffe00), true);
+        eq.stop();
+        eq.wait();
+        // 2*2 + (4 + 1) + 44 = 53
+        TTEST_EQUAL(eq.start({"33", "33"}, 0xf, 0xfffffffffff00), false);
+    }
+
+    TTEST_CASE("start() returns false when hand range is empty after card removal")
+    {
+        TTEST_EQUAL(eq.start({"random", ""}), false);
+        TTEST_EQUAL(eq.start({"AA", "22"}, CardRange::getCardMask("AsAh"), CardRange::getCardMask("Ac")), false);
+    }
+
+    TTEST_CASE("start() returns false when no feasible combination of holecards")
+    {
+        TTEST_EQUAL(eq.start({"AA", "AK"}, CardRange::getCardMask("As"), CardRange::getCardMask("Ah")), false);
+    }
+
     TTEST_CASE("test 1 - enumeration") { enumTest(TESTDATA[0]); }
     TTEST_CASE("test 1 - monte carlo") { monteCarloTest(TESTDATA[0]); }
     TTEST_CASE("test 2 - enumeration") { enumTest(TESTDATA[1]); }
@@ -208,123 +268,6 @@ class EquityCalculatorTest : public ttest::TestBase
     TTEST_CASE("test 6 - monte carlo") { monteCarloTest(TESTDATA[5]); }
 };
 
-// Evaluating hands in sequential order.
-void sequentialEvaluationBenchmark()
-{
-    cout << endl << "Sequential evaluation:" << endl;
-
-    HandEvaluator eval;
-    unsigned sum = 0;
-    uint64_t count = 0;
-
-    auto t1 = chrono::high_resolution_clock::now();
-
-    for (unsigned i = 0; i < 5; ++i) {
-        for (unsigned c1 = 0; c1 < 52; c1++) {
-            for (unsigned c2 = c1 + 1; c2 < 52; c2++) {
-                for (unsigned c3 = c2 + 1; c3 < 52; c3++) {
-                    for (unsigned c4 = c3 + 1; c4 < 52; c4++) {
-                        for (unsigned c5 = c4 + 1; c5 < 52; c5++) {
-                            Hand h5 = Hand::empty() + c1 + c2 + c3 + c4 + c5;
-                            for (unsigned c6 = c5 + 1; c6 < 52; c6++) {
-                                Hand h6 = h5 + c6;
-                                for (unsigned c7 = c6 + 1; c7 < 52; c7++) {
-                                    ++count;
-                                    Hand h7 = h6 + c7;
-                                    sum += eval.evaluate(h7);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    auto t2 = chrono::high_resolution_clock::now();
-    double t = 1e-9 * chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count();
-    cout << count << " evals  " << (1e-6 * count / t) << "M/s  " << t << "s  " << sum << endl;
-}
-
-// Evaluating random hands.
-void randomEvaluationBenchmark()
-{
-    cout << endl << "Random order evaluation (card arrays):" << endl;
-    XoroShiro128Plus rng(0);
-    FastUniformIntDistribution<unsigned> rnd(0, 51);
-    HandEvaluator eval;
-    uint64_t count = 0;
-    unsigned sum = 0;
-
-    vector<array<uint8_t,7>> table;
-    for (unsigned i = 0; i < 10000000; ++i) {
-        uint64_t usedCardsMask = 0;
-        table.push_back({});
-        for(auto& card : table.back()) {
-            uint64_t cardMask;
-            do {
-                card = rnd(rng);
-                cardMask = 1ull << card;
-            } while (usedCardsMask & cardMask);
-            usedCardsMask |= cardMask;
-        }
-    }
-
-    auto t1 = chrono::high_resolution_clock::now();
-
-    for (int i = 0; i < 50; ++i) {
-        for (auto& h: table) {
-            Hand hand = Hand::empty() + h[0] + h[1] + h[2] + h[3] + h[4] + h[5] + h[6];
-            sum += eval.evaluate(hand);
-            ++count;
-        }
-    }
-
-    auto t2 = chrono::high_resolution_clock::now();
-    double t = 1e-9 * chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count();
-    cout << count << " evals  " << (1e-6 * count / t) << "M/s  " << t << "s  " << sum << endl;
-}
-
-// Evaluating random hands.
-void randomEvaluationBenchmark2()
-{
-    cout << endl << "Random order evaluation (precalculated Hand objects):" << endl;
-    XoroShiro128Plus rng(0);
-    FastUniformIntDistribution<unsigned> rnd(0, 51);
-    HandEvaluator eval;
-    uint64_t count = 0;
-    unsigned sum = 0;
-
-    vector<Hand> table;
-    for (unsigned i = 0; i < 10000000; ++i) {
-        uint64_t usedCardsMask = 0;
-        table.push_back(Hand::empty());
-        for(unsigned j = 0; j < 7; ++j) {
-            unsigned card;
-            uint64_t cardMask;
-            do {
-                card = rnd(rng);
-                cardMask = 1ull << card;
-            } while (usedCardsMask & cardMask);
-            usedCardsMask |= cardMask;
-            table.back() += card;
-        }
-    }
-
-    auto t1 = chrono::high_resolution_clock::now();
-
-    for (int i = 0; i < 50; ++i) {
-        for (auto& hand: table) {
-            sum += eval.evaluate(hand);
-            ++count;
-        }
-    }
-
-    auto t2 = chrono::high_resolution_clock::now();
-    double t = 1e-9 * chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count();
-    cout << count << " evals  " << (1e-6 * count / t) << "M/s  " << t << "s  " << sum << endl;
-}
-
 int main()
 {
     cout << "=== Tests ===" << endl;
@@ -336,8 +279,7 @@ int main()
     EquityCalculatorTest().run();
 
     cout << endl << endl << "=== Benchmarks ===" << endl;
-    sequentialEvaluationBenchmark();
-    randomEvaluationBenchmark();
-    randomEvaluationBenchmark2();
+    void benchmark();
+    benchmark();
     cout << endl << "Done." << endl;
 }

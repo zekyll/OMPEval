@@ -100,7 +100,7 @@ struct Hand
 
 private:
     static Hand CARDS[CARD_COUNT];
-    static Hand EMPTY;
+    static const Hand EMPTY;
     static const unsigned CARD_COUNTER_SHIFT = 48;
     static const unsigned SUITS_SHIFT = 32;
     static const uint64_t FLUSH_CHECK_MASK = 0x8888ull << SUITS_SHIFT;

@@ -3,6 +3,7 @@
 
 #include "../libdivide/libdivide.h"
 #include <cstdint>
+#include <climits>
 
 namespace omp {
 
@@ -102,6 +103,7 @@ public:
     {
         mMin = min;
         mDiff = max - min + 1;
+        mBuffer = 0;
         mBufferUsesLeft = 0;
     }
 

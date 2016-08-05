@@ -18,7 +18,7 @@ bool EquityCalculator::start(const std::vector<CardRange>& handRanges, uint64_t 
         return false;
     if (bitCount(boardCards) > BOARD_CARDS)
         return false;
-    if (2 * handRanges.size() + bitCount(boardCards | deadCards) + BOARD_CARDS > CARD_COUNT)
+    if (2 * handRanges.size() + bitCount(deadCards) + BOARD_CARDS > CARD_COUNT)
         return false;
 
     // Set up card ranges.
@@ -326,7 +326,7 @@ void EquityCalculator::enumerate()
             if (useLookup) {
                 // Sort players based on their hand.
                 std::sort(playerHands, playerHands + nplayers, [](const HandWithPlayerIdx& lhs,
-                          HandWithPlayerIdx& rhs){
+                          const HandWithPlayerIdx& rhs){
                     if (lhs.cards[0] >> 2 != rhs.cards[0] >> 2)
                         return lhs.cards[0] >> 2 < rhs.cards[0] >> 2;
                     if (lhs.cards[1] >> 2 != rhs.cards[1] >> 2)
@@ -706,8 +706,12 @@ void EquityCalculator::updateResults(const BatchResults& stats, bool threadFinis
 
     mResults.finished = threadFinished && --mUnfinishedThreads == 0;
 
-    // Periodic update through callback/signal.
     double dt = 1e-9 * std::chrono::duration_cast<std::chrono::nanoseconds>(t - mLastUpdate).count();
+    //std::cout << mResults.hands << " " << mHandLimit << std::endl;
+    if (mResults.time + dt >= mTimeLimit || mResults.hands + mResults.intervalHands >= mHandLimit)
+        mStopped = true;
+
+    // Periodic update through callback.
     if (dt >= mUpdateInterval || mResults.finished) {
         mResults.intervalTime = dt;
         mResults.time += mResults.intervalTime;

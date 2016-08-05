@@ -74,7 +74,7 @@ std::vector<CombinedRange> CombinedRange::joinRanges(
 
     for (;;) {
         uint64_t bestSize = ~0ull;
-        unsigned besti, bestj;
+        unsigned besti = 0, bestj = 0;
         for (unsigned i = 0; i < combinedRanges.size(); ++i) {
             for (unsigned j = 0; j < i; ++j) {
                 uint64_t newSize = combinedRanges[i].estimateJoinSize(combinedRanges[j]);
