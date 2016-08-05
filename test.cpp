@@ -197,19 +197,6 @@ class EquityCalculatorTest : public ttest::TestBase
         eq.setHandLimit(0);
     }
 
-    TTEST_CASE("test 1 - enumeration") { enumTest(TESTDATA[0]); }
-    TTEST_CASE("test 1 - monte carlo") { monteCarloTest(TESTDATA[0]); }
-    TTEST_CASE("test 2 - enumeration") { enumTest(TESTDATA[1]); }
-    TTEST_CASE("test 2 - monte carlo") { monteCarloTest(TESTDATA[1]); }
-    TTEST_CASE("test 3 - enumeration") { enumTest(TESTDATA[2]); }
-    TTEST_CASE("test 3 - monte carlo") { monteCarloTest(TESTDATA[2]); }
-    TTEST_CASE("test 4 - enumeration") { enumTest(TESTDATA[3]); }
-    TTEST_CASE("test 4 - monte carlo") { monteCarloTest(TESTDATA[3]); }
-    TTEST_CASE("test 5 - enumeration") { enumTest(TESTDATA[4]); }
-    TTEST_CASE("test 5 - monte carlo") { monteCarloTest(TESTDATA[4]); }
-    TTEST_CASE("test 6 - enumeration") { enumTest(TESTDATA[5]); }
-    TTEST_CASE("test 6 - monte carlo") { monteCarloTest(TESTDATA[5]); }
-
     TTEST_CASE("time limit")
     {
         eq.setTimeLimit(0.5);
@@ -233,9 +220,52 @@ class EquityCalculatorTest : public ttest::TestBase
         eq.start({"random", "random"}, 0, 0, false, 0, callback, 1.0);
         eq.wait();
         auto r = eq.getResults();
-        cout << r.time << endl;
         TTEST_EQUAL(r.hands >= 3e6 && r.hands <= 3e6 + 16 * 0x1000, true);
     }
+
+    TTEST_CASE("start() returns false when too many board cards")
+    {
+        TTEST_EQUAL(eq.start({"random"}, CardRange::getCardMask("2c3c4c5c6c7c")), false);
+    }
+
+    TTEST_CASE("start() returns false when too many players")
+    {
+        TTEST_EQUAL(eq.start({"AA", "KK", "QQ", "JJ", "TT", "99", "88"}), false);
+    }
+
+    TTEST_CASE("start() returns false when too few cards left in the deck")
+    {
+        // 2*2 + (4 + 1) + 43 = 52
+        TTEST_EQUAL(eq.start({"33", "33"}, 0xf, 0xffffffffffe00), true);
+        eq.stop();
+        eq.wait();
+        // 2*2 + (4 + 1) + 44 = 53
+        TTEST_EQUAL(eq.start({"33", "33"}, 0xf, 0xfffffffffff00), false);
+    }
+
+    TTEST_CASE("start() returns false when hand range is empty after card removal")
+    {
+        TTEST_EQUAL(eq.start({"random", ""}), false);
+        TTEST_EQUAL(eq.start({"AA", "22"}, CardRange::getCardMask("AsAh"), CardRange::getCardMask("Ac")), false);
+    }
+
+    TTEST_CASE("start() returns false when no feasible combination of holecards")
+    {
+        TTEST_EQUAL(eq.start({"AA", "AK"}, CardRange::getCardMask("As"), CardRange::getCardMask("Ah")), false);
+    }
+
+    TTEST_CASE("test 1 - enumeration") { enumTest(TESTDATA[0]); }
+    TTEST_CASE("test 1 - monte carlo") { monteCarloTest(TESTDATA[0]); }
+    TTEST_CASE("test 2 - enumeration") { enumTest(TESTDATA[1]); }
+    TTEST_CASE("test 2 - monte carlo") { monteCarloTest(TESTDATA[1]); }
+    TTEST_CASE("test 3 - enumeration") { enumTest(TESTDATA[2]); }
+    TTEST_CASE("test 3 - monte carlo") { monteCarloTest(TESTDATA[2]); }
+    TTEST_CASE("test 4 - enumeration") { enumTest(TESTDATA[3]); }
+    TTEST_CASE("test 4 - monte carlo") { monteCarloTest(TESTDATA[3]); }
+    TTEST_CASE("test 5 - enumeration") { enumTest(TESTDATA[4]); }
+    TTEST_CASE("test 5 - monte carlo") { monteCarloTest(TESTDATA[4]); }
+    TTEST_CASE("test 6 - enumeration") { enumTest(TESTDATA[5]); }
+    TTEST_CASE("test 6 - monte carlo") { monteCarloTest(TESTDATA[5]); }
 };
 
 int main()
