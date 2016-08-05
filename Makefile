@@ -7,11 +7,14 @@ OBJS := ${SRCS:.cpp=.o}
 
 all: lib/ompeval.a test
 
-lib/ompeval.a: $(OBJS)
-	ar rcs lib/ompeval.a $(OBJS)
+lib:
+	mkdir lib
 
-test: test.cpp lib/ompeval.a
-	$(CXX) $(CXXFLAGS) -o test test.cpp lib/ompeval.a
+lib/ompeval.a: $(OBJS) | lib
+	ar rcs $@ $^
+
+test: test.cpp benchmark.cpp lib/ompeval.a
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
-	$(RM) test lib/ompeval.a $(OBJS)
+	$(RM) test test.exe lib/ompeval.a $(OBJS)
