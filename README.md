@@ -6,16 +6,16 @@ OMPEval is a fast C++ hand evaluator and equity calculator for Texas Holdem poke
 - Evaluates hands with any number of cards from 0 to 7 (with less than 5 cards any missing cards are considered the worst kicker).
 - Multiple cards are combined in Hand objects which makes the actual evaluation fast and allows caching of partial hand data.
 - Evaluator gives each hand 16-bit integer ranking, which can be used for comparing hands (bigger is better). The quotient when dividing with 4096 also gives the hand category.
-- Has relatively low memory usage (400kB lookup tables) and initialization time (~10ms).
+- Has relatively low memory usage (200kB lookup tables) and initialization time (~10ms).
 - Can be compiled for both 32- and 64-bit platforms but has 50% better performance on 64sbit. On x64 the evaluator also takes advantage of SSE4 if enabled by compiler flags.
 
 Below is a performance comparison with three other hand evaluators ([SKPokerEval](https://github.com/kennethshackleton/SKPokerEval), [2+2 Evaluator](https://github.com/tangentforks/TwoPlusTwoHandEvaluator) and [ACE Evaluator](https://github.com/ashelly/ACE_eval)). Benchmarks were done on Intel 3770k using a single thread. Results are in millions of evaluations per second. **Seq**: sequential evaluation performance. **Rand1**: evaluation from a pregenerated array of random hands (7 x uint8). **Rand2**: evaluation from an array of random Hand objects.
 ```
         TDMGCC5.1 64bit        TDMGCC5.1 32bit        VC2013 64bit
         OMP  SKPE  2+2   ACE   OMP  SKPE  2+2   ACE   OMP  SKPE  2+2   ACE
-Seq:    756  223   1588  80    549  134   1122  75    681  204   1544  69
-Rand1:  240  146   19    43    132  99    19    38    216  148   19    39      (Meval/s)
-Rand2:  383              87    394              62    360              72
+Seq:    780  223   1588  80    494  134   1122  75    624  204   1544  69
+Rand1:  269  146   19    43    91  99    19     38    257  148   19    39      (Meval/s)
+Rand2:  544              87    473              62    509              72
 ```
 ###Usage
 ```c++
@@ -89,7 +89,7 @@ To build a static library (./lib/ompeval.a) on Unix systems, use `make`. To enab
 
 ## About the algorithms used
 
-The hand evaluator was originally based on SKPokerEval, but everything was written from scratch and there are now major differences. OMPEval uses perfect hashing to reduce the size of the main lookup table from 36MB to 400kB. Card rank multipliers were adjusted so that the evaluator allows any number of cards between 0 and 7 in hand. OMPEval also uses a structure for keeping track of the hand data so that the evaluator doesn't need access to the original cards, which allows partial hand data to be cached when enumerating etc. Flush checking is also done more efficiently using bit operations.
+The hand evaluator was originally based on SKPokerEval, but everything was written from scratch and there are now major differences. OMPEval uses perfect hashing to reduce the size of the main lookup table from 36MB to 200kB. Card rank multipliers were adjusted so that the evaluator allows any number of cards between 0 and 7 in hand. OMPEval also uses a structure for keeping track of the hand data so that the evaluator doesn't need access to the original cards, which allows partial hand data to be cached when enumerating etc. Flush checking is also done more efficiently using bit operations.
 
 In equity calculator the Monte carlo simulation uses a random walk algorithm that avoids the problem of having to do a full resampling of all players' hands after holecard collision. The algorithm also combines players with narrow ranges and eliminates some of the conflicting combos, so it works well even with overlapping ranges where the naive rejection sampling would fail 99.9% of time.
 

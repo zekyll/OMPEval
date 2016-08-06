@@ -48,23 +48,22 @@ private:
     static bool cardInit;
     static void initCardConstants();
     static void staticInit();
-    static void calculatePerfectHash();
+    static void calculatePerfectHashOffsets();
     static unsigned populateLookup(uint64_t rankCounts, unsigned ncards, unsigned handValue, unsigned endRank,
                                    unsigned maxPair, unsigned maxTrips, unsigned maxStraight, bool flush = false);
     static unsigned getKey(uint64_t rankCounts, bool flush);
     static unsigned getBiggestStraight(uint64_t rankCounts);
-    static void adjustOffsets();
 
     // Rank multipliers for non-flush and flush hands.
     static const unsigned RANKS[RANK_COUNT];
     static const unsigned FLUSH_RANKS[RANK_COUNT];
 
     // Turn on to recalculate and output the offset array.
-    static const bool RECALCULATE_PERF_HASH = false;
+    static const bool RECALCULATE_PERF_HASH_OFFSETS = false;
 
     // Determines in how many rows the original lookup table is divided (2^shift). More rows means slightly smaller
     // lookup table but much bigger offset table.
-    static const unsigned PERF_HASH_ROW_SHIFT = 11;
+    static const unsigned PERF_HASH_ROW_SHIFT = 12;
     static const unsigned PERF_HASH_COLUMN_MASK = (1 << PERF_HASH_ROW_SHIFT) - 1;
 
     // Minimum number of cards required for evaluating a hand. Can be set to higher value to decrease lookup
@@ -75,9 +74,9 @@ private:
     static const unsigned MAX_KEY;
     static const size_t FLUSH_LOOKUP_SIZE = 8192;
     static uint16_t* ORIG_LOOKUP;
-    static uint16_t LOOKUP[190641 + RECALCULATE_PERF_HASH * 100000000];
+    static uint16_t LOOKUP[86529 + RECALCULATE_PERF_HASH_OFFSETS * 100000000];
     static uint16_t FLUSH_LOOKUP[FLUSH_LOOKUP_SIZE];
-    static uint32_t PERF_HASH_ROW_OFFSETS[8982 + RECALCULATE_PERF_HASH * 100000];
+    static uint32_t PERF_HASH_ROW_OFFSETS[8191 + RECALCULATE_PERF_HASH_OFFSETS * 100000];
 };
 
 }
