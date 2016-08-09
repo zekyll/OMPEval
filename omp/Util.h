@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cassert>
+#include <cstdint>
 
 #if _MSC_VER
 #include <memory>
