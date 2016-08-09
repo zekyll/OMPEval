@@ -34,25 +34,27 @@ public:
         cout << endl;
         if (!is_same<TEval,Omp>::value)
             test(Omp());
-        sequential();
+        sequential<false>();
         random1();
         if (!is_same<Hand,nullptr_t>::value)
             random2();
+        sequential<true>();
     }
 
 private:
     // Benchmark sequential evaluation.
+    template<bool tSingleSuit>
     void sequential()
     {
-        cout << "Sequential evaluation:" << endl;
+        cout << "Sequential evaluation" << (tSingleSuit ? " (flush hands):" : ":") <<  endl;
 
-        static const unsigned END = 52 + TEval::CARD_OFFSET;
+        static const unsigned END = (tSingleSuit ? 13 : 52) + TEval::CARD_OFFSET;
         unsigned sum = 0;
         uint64_t count = 0;
 
         auto t1 = chrono::high_resolution_clock::now();
 
-        for (unsigned i = 0; i < 5; ++i) {
+        for (unsigned i = 0; i < (tSingleSuit ? 200000 : 5); ++i) {
             for (unsigned c1 = TEval::CARD_OFFSET; c1 < END; c1++) {
                 for (unsigned c2 = c1 + 1; c2 < END; c2++) {
                     for (unsigned c3 = c2 + 1; c3 < END; c3++) {
