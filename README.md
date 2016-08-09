@@ -7,15 +7,16 @@ OMPEval is a fast C++ hand evaluator and equity calculator for Texas Holdem poke
 - Multiple cards are combined in Hand objects which makes the actual evaluation fast and allows caching of partial hand data.
 - Evaluator gives each hand 16-bit integer ranking, which can be used for comparing hands (bigger is better). The quotient when dividing with 4096 also gives the hand category.
 - Has relatively low memory usage (200kB lookup tables) and initialization time (~10ms).
-- Can be compiled for both 32- and 64-bit platforms but has 50% better performance on 64sbit. On x64 the evaluator also takes advantage of SSE4 if enabled by compiler flags.
+- Can be compiled for both 32- and 64-bit platforms but has better performance on 64bit.
+- Uses SSE2/SSE4 when available. On x64 the impact is small, but in 32-bit mode SSE2 is required for decent performance.
 
 Below is a performance comparison with three other hand evaluators ([SKPokerEval](https://github.com/kennethshackleton/SKPokerEval), [2+2 Evaluator](https://github.com/tangentforks/TwoPlusTwoHandEvaluator) and [ACE Evaluator](https://github.com/ashelly/ACE_eval)). Benchmarks were done on Intel 3770k using a single thread. Results are in millions of evaluations per second. **Seq**: sequential evaluation performance. **Rand1**: evaluation from a pregenerated array of random hands (7 x uint8). **Rand2**: evaluation from an array of random Hand objects.
 ```
         TDMGCC5.1 64bit        TDMGCC5.1 32bit        VC2013 64bit
         OMP  SKPE  2+2   ACE   OMP  SKPE  2+2   ACE   OMP  SKPE  2+2   ACE
-Seq:    780  223   1588  80    494  134   1122  75    624  204   1544  69
-Rand1:  269  146   19    43    91  99    19     38    257  148   19    39      (Meval/s)
-Rand2:  544              87    473              62    509              72
+Seq:    775  223   1588  80    716  134   1122  75    691  204   1544  69
+Rand1:  272  146   19    43    233  99    19    38    262  148   19    39      (Meval/s)
+Rand2:  520              87    466              62    529              72
 ```
 ###Usage
 ```c++
@@ -85,7 +86,7 @@ int main()
 ```
 
 ## Building
-To build a static library (./lib/ompeval.a) on Unix systems, use `make`. To enable SSE4 support, use `make SSE4=1`. Run tests with `./test`. For Windows there's currently no build files, so you will have to compile everything manually. The code has been tested with MSVC2013, TDM-GCC 5.1.0 and MinGW64 6.1 on Windows, and with g++ 4.8 on Debian.
+To build a static library (./lib/ompeval.a) on Unix systems, use `make`. To enable -msse4.1 switch, use `make SSE4=1`. Run tests with `./test`. For Windows there's currently no build files, so you will have to compile everything manually. The code has been tested with MSVC2013, TDM-GCC 5.1.0 and MinGW64 6.1 on Windows, and with g++ 4.8 on Debian.
 
 ## About the algorithms used
 

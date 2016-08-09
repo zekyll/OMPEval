@@ -22,24 +22,18 @@ public:
     uint16_t evaluate(const Hand& hand) const
     {
         omp_assert(hand.count() <= 7 && hand.count() == bitCount(hand.mask()));
-        // Hand has a 4-bit counter for each suit. It starts at 3 so the 4th bit gets set when there is 5 or more cards
-        // of that suit.
-        uint64_t flushCheck = hand.key() & Hand::FLUSH_CHECK_MASK;
-        if (!tFlushPossible || !flushCheck) {
-            // Get lookup key from the low 32 bits.
-            unsigned key = (uint32_t)hand.key();
+        if (!tFlushPossible || !hand.hasFlush()) {
+            uint32_t key = hand.rankKey();
             return LOOKUP[perfHash(key)];
         } else {
-            // Get the index of the flush check bit and use it to get the card mask for that suit.
-            unsigned shift = countTrailingZeros((unsigned)(flushCheck >> 35)) << 2;
-            unsigned flushKey = (uint16_t)(hand.mask() >> shift); // Get card mask of the correct suit.
+            uint16_t flushKey = hand.flushKey();
             omp_assert(flushKey < FLUSH_LOOKUP_SIZE);
             return FLUSH_LOOKUP[flushKey];
         }
     }
 
 private:
-    static unsigned perfHash(uint32_t key)
+    static unsigned perfHash(unsigned key)
     {
         omp_assert(key <= MAX_KEY);
         return key + PERF_HASH_ROW_OFFSETS[key >> PERF_HASH_ROW_SHIFT];

@@ -50,7 +50,7 @@ class HandEvaluatorTest : public ttest::TestBase
     HandEvaluator e;
     uint64_t counts[10]{};
 
-    void enumerate(unsigned cardsLeft, Hand h = Hand::empty(), unsigned start = 0)
+    void enumerate(unsigned cardsLeft, const Hand& h = Hand::empty(), unsigned start = 0)
     {
         for (unsigned c = start; c < 52; ++c) {
             if (cardsLeft == 1)

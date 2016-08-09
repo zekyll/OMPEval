@@ -2,9 +2,24 @@
 #define COMBINED_RANGE_H
 
 #include "HandEvaluator.h"
+#include "Util.h"
 #include <vector>
 #include <array>
 #include <cstdint>
+
+namespace omp { namespace impl {
+
+struct Combo
+{
+    uint64_t cardMask;
+    std::array<uint8_t,2> holeCards[MAX_PLAYERS];
+    Hand evalHands[MAX_PLAYERS];
+};
+
+} }
+
+// Need aligned allocator because Combo uses Hand.
+OMP_DEFINE_ALIGNED_ALLOCATOR(omp::impl::Combo)
 
 namespace omp {
 
@@ -15,12 +30,7 @@ namespace omp {
 class CombinedRange
 {
 public:
-    struct Combo
-    {
-        uint64_t cardMask;
-        std::array<uint8_t,2> holeCards[MAX_PLAYERS];
-        Hand evalHands[MAX_PLAYERS];
-    };
+    typedef impl::Combo Combo;
 
     // Default constructor (0 players).
     CombinedRange();
