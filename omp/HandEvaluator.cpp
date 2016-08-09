@@ -1,6 +1,7 @@
 #include "HandEvaluator.h"
 
 #include "OffsetTable.hxx"
+#include "Util.h"
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -118,12 +119,14 @@ unsigned HandEvaluator::populateLookup(uint64_t ranks, unsigned ncards, unsigned
         unsigned key = getKey(ranks, flush);
 
         // Write flush and non-flush hands in different tables
-        if (flush)
+        if (flush) {
             FLUSH_LOOKUP[key] = handValue;
-        else if (RECALCULATE_PERF_HASH_OFFSETS)
+        } else if (RECALCULATE_PERF_HASH_OFFSETS) {
             ORIG_LOOKUP[key] = handValue;
-        else
+        } else {
+            omp_assert(LOOKUP[perfHash(key)] == 0 || LOOKUP[perfHash(key)] == handValue);
             LOOKUP[perfHash(key)] = handValue;
+        }
 
         if (ncards == 7)
             return handValue;
