@@ -1,5 +1,5 @@
-#ifndef EQUITYCALCULATOR_H
-#define EQUITYCALCULATOR_H
+#ifndef OMP_EQUITYCALCULATOR_H
+#define OMP_EQUITYCALCULATOR_H
 
 #include "CombinedRange.h"
 #include "Random.h"
@@ -206,4 +206,4 @@ private:
 
 }
 
-#endif // EQUITYCALCULATOR_H
+#endif // OMP_EQUITYCALCULATOR_H

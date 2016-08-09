@@ -1,5 +1,5 @@
-#ifndef HAND
-#define HAND
+#ifndef OMP_HAND_H
+#define OMP_HAND_H
 
 #include "Util.h"
 #include "Constants.h"
@@ -237,4 +237,4 @@ private:
 // custom allocator to fix the alignment.
 OMP_DEFINE_ALIGNED_ALLOCATOR(omp::Hand);
 
-#endif // HAND
+#endif // OMP_HAND_H

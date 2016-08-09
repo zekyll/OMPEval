@@ -1,5 +1,5 @@
-#ifndef OMPEVAL_H
-#define OMPEVAL_H
+#ifndef OMP_HAND_EVALUATOR_H
+#define OMP_HAND_EVALUATOR_H
 
 #include "Util.h"
 #include "Constants.h"
@@ -75,4 +75,4 @@ private:
 
 }
 
-#endif // OMPEVAL_H
+#endif // OMP_HAND_EVALUATOR_H

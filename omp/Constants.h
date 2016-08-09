@@ -1,5 +1,5 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef OMP_CONSTANTS_H
+#define OMP_CONSTANTS_H
 
 namespace omp {
 
@@ -28,4 +28,4 @@ static const unsigned STRAIGHT_FLUSH = 9 * HAND_CATEGORY_OFFSET;
 
 }
 
-#endif // CONSTANTS_H
+#endif // OMP_CONSTANTS_H

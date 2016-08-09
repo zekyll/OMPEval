@@ -1,5 +1,5 @@
-#ifndef COMBINED_RANGE_H
-#define COMBINED_RANGE_H
+#ifndef OMP_COMBINED_RANGE_H
+#define OMP_COMBINED_RANGE_H
 
 #include "HandEvaluator.h"
 #include "Util.h"
@@ -81,4 +81,4 @@ private:
 
 }
 
-#endif // COMBINED_RANGE_H
+#endif // OMP_COMBINED_RANGE_H

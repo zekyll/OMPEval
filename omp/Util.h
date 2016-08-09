@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef OMP_UTIL_H
+#define OMP_UTIL_H
 
 #include <cstddef>
 #include <cassert>
@@ -184,4 +184,4 @@ public:
 
 }
 
-#endif // UTIL_H
+#endif // OMP_UTIL_H

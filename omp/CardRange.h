@@ -1,5 +1,5 @@
-#ifndef CARDRANGE_H
-#define CARDRANGE_H
+#ifndef OMP_CARDRANGE_H
+#define OMP_CARDRANGE_H
 
 #include <string>
 #include <vector>
@@ -60,4 +60,4 @@ private:
 
 }
 
-#endif // CARDRANGE_H
+#endif // OMP_CARDRANGE_H
