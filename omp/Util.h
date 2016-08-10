@@ -1,13 +1,12 @@
 #ifndef OMP_UTIL_H
 #define OMP_UTIL_H
 
+#include <memory>
+#include <limits>
 #include <cstddef>
 #include <cassert>
 #include <cstdint>
-
 #if _MSC_VER
-#include <memory>
-#include <limits>
 #include <intrin.h>
 #endif
 
@@ -91,7 +90,7 @@ inline unsigned bitCount(unsigned long long x)
 #endif
 
 // Allocates aligned memory.
-static void* alignedNew(size_t size, unsigned alignment)
+static inline void* alignedNew(size_t size, unsigned alignment)
 {
     // Alignment must be nonzero power of two.
     omp_assert(alignment && !(alignment & (alignment - 1)));
@@ -115,7 +114,7 @@ static void* alignedNew(size_t size, unsigned alignment)
 }
 
 // Deallocates memory allocated by alignedNew().
-static void alignedDelete(void* p)
+static inline void alignedDelete(void* p)
 {
     delete[] static_cast<char**>(p)[-1];
 }
@@ -137,9 +136,6 @@ public:
         alignedDelete(p);
     }
 
-    // MSVC2013 doesn't support allocator traits correctly.
-    #if _MSC_VER
-
     typedef T* pointer;
     typedef const T* const_pointer;
     typedef T& reference;
@@ -152,7 +148,7 @@ public:
         return std::numeric_limits<size_t>::max() / sizeof(T);
     }
 
-    template< class U, class... Args >
+    template<class U, class... Args>
     void construct(U* p, Args&&... args)
     {
         new(p)T(args...);
@@ -167,8 +163,6 @@ public:
     {
         return std::allocator<T>();
     }
-
-    #endif
 };
 
 #if OMP_SSE2 && !OMP_X64

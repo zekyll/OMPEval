@@ -235,6 +235,6 @@ private:
 
 // Some 32-bit compilers don't align __m128i correctly inside containers, which causes segfault. We need a
 // custom allocator to fix the alignment.
-OMP_DEFINE_ALIGNED_ALLOCATOR(omp::Hand);
+OMP_DEFINE_ALIGNED_ALLOCATOR(omp::Hand)
 
 #endif // OMP_HAND_H

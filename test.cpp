@@ -257,7 +257,7 @@ class EquityCalculatorTest : public ttest::TestBase
 
     void monteCarloTest(const TestCase& tc)
     {
-        double hands = accumulate(tc.expectedResults.begin(), tc.expectedResults.end(), 0);
+        double hands = accumulate(tc.expectedResults.begin(), tc.expectedResults.end(), 0.0);
         std::vector<CardRange> ranges2(tc.ranges.begin(), tc.ranges.end());
         bool timeout = false;
         auto callback = [&](const EquityCalculator::Results& r){
@@ -331,7 +331,7 @@ class EquityCalculatorTest : public ttest::TestBase
 
     TTEST_CASE("hand limit")
     {
-        eq.setHandLimit(3e6);
+        eq.setHandLimit(3000000);
         auto callback = [&](const EquityCalculator::Results& r){
             if (r.time >= 2)
                 eq.stop();
@@ -339,7 +339,7 @@ class EquityCalculatorTest : public ttest::TestBase
         eq.start({"random", "random"}, 0, 0, false, 0, callback, 1.0);
         eq.wait();
         auto r = eq.getResults();
-        TTEST_EQUAL(r.hands >= 3e6 && r.hands <= 3e6 + 16 * 0x1000, true);
+        TTEST_EQUAL(r.hands >= 3000000 && r.hands <= 3000000 + 16 * 0x1000, true);
     }
 
     TTEST_CASE("test 1 - enumeration") { enumTest(TESTDATA[0]); }

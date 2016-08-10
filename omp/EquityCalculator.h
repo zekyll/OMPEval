@@ -169,7 +169,7 @@ private:
     static Hand getBoardFromBitmask(uint64_t board);
     static std::vector<std::vector<std::array<uint8_t,2>>> removeInvalidCombos(const std::vector<CardRange>& handRanges,
                                                                uint64_t reservedCards);
-    std::pair<uint64_t,uint64_t> reserveBatch(unsigned batchCount);
+    std::pair<uint64_t,uint64_t> reserveBatch(uint64_t batchCount);
     uint64_t getPreflopCombinationCount();
     uint64_t getPostflopCombinationCount();
 
@@ -196,7 +196,7 @@ private:
     unsigned mCombinedRangeCount;
     uint64_t mDeadCards, mBoardCards;
     HandEvaluator mEval;
-    double mStdevTarget = 5e-5, mTimeLimit = INFINITE, mUpdateInterval = 0.1;
+    double mStdevTarget = 5e-5, mTimeLimit = (double)INFINITE, mUpdateInterval = 0.1;
     uint64_t mHandLimit = INFINITE;
     std::function<void(const Results& results)> mCallback;
 

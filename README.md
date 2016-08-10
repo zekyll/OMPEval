@@ -86,7 +86,7 @@ int main()
 ```
 
 ## Building
-To build a static library (./lib/ompeval.a) on Unix systems, use `make`. To enable -msse4.1 switch, use `make SSE4=1`. Run tests with `./test`. For Windows there's currently no build files, so you will have to compile everything manually. The code has been tested with MSVC2013, TDM-GCC 5.1.0 and MinGW64 6.1 on Windows, and with g++ 4.8 on Debian.
+To build a static library (./lib/ompeval.a) on Unix systems, use `make`. To enable -msse4.1 switch, use `make SSE4=1`. Run tests with `./test`. For Windows there's currently no build files, so you will have to compile everything manually. The code has been tested with MSVC2013, TDM-GCC 5.1.0 and MinGW64 6.1, Clang 3.8.1 on Cygwin, and g++ 4.8 on Debian.
 
 ## About the algorithms used
 

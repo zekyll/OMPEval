@@ -28,7 +28,8 @@ bool HandEvaluator::cardInit = (initCardConstants(), true);
 // Does a thread-safe (guaranteed by C++11) one time initialization of static data.
 HandEvaluator::HandEvaluator()
 {
-    static bool initVar = (staticInit(), initVar);
+    static bool initVar = (staticInit(), true);
+    (void)initVar;
 }
 
 // Initialize card constants.
@@ -217,8 +218,8 @@ void HandEvaluator::calculatePerfectHashOffsets()
                 break;
         }
         //std::cout << "row=" << i << " size=" << rows[i].second.size() << " offset=" << offset << std::endl;
-        PERF_HASH_ROW_OFFSETS[rows[i].first] = (uint32_t)offset - (rows[i].first << PERF_HASH_ROW_SHIFT);
-        for (unsigned key : rows[i].second) {
+        PERF_HASH_ROW_OFFSETS[rows[i].first] = (uint32_t)(offset - (rows[i].first << PERF_HASH_ROW_SHIFT));
+        for (size_t key : rows[i].second) {
             size_t newIdx = (key & PERF_HASH_COLUMN_MASK) + offset;
             maxIdx = std::max<size_t>(maxIdx, newIdx);
             LOOKUP[newIdx] = ORIG_LOOKUP[key];

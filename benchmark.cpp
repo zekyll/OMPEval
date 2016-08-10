@@ -19,7 +19,195 @@
 
 using namespace std;
 
-class Omp;
+// Base class for evaluator adaptors utilizing CRTP.
+template<class TEval, class THand = nullptr_t>
+class AdaptorBase
+{
+public:
+    typedef THand Hand;
+    // Card index format:
+    static const unsigned CARD_OFFSET = 0;
+    static const unsigned RANK_MAJOR = true;
+    static const unsigned ASCENDING_RANKS = true;
+
+    void initHand(THand& h) const
+    {
+    }
+
+    void addCard(THand& h, unsigned cardIdx) const
+    {
+    }
+
+    static unsigned cardIdxToCanonical(unsigned idx)
+    {
+        idx -= TEval::CARD_OFFSET;
+        unsigned rank = TEval::RANK_MAJOR ? idx >> 2 : idx % 13;
+        unsigned suit = TEval::RANK_MAJOR ? idx & 3 : idx / 13;
+        rank = TEval::ASCENDING_RANKS ? rank : 12 - rank;
+        return 4 * rank + suit;
+    }
+
+    static unsigned cardIdxFromCanonical(unsigned idx)
+    {
+        unsigned rank = idx >> 2;
+        unsigned suit = idx & 3;
+        rank = TEval::ASCENDING_RANKS ? rank : 12 - rank;
+        return (TEval::RANK_MAJOR ? 4 * rank + suit : 13 * suit + rank) + TEval::CARD_OFFSET;
+    }
+};
+
+// OMPEval
+class Omp : public omp::HandEvaluator, public AdaptorBase<Omp, omp::Hand>
+{
+public:
+    void initHand(Hand& h) const
+    {
+        h = Hand::empty();
+    }
+
+    void addCard(Hand& h, unsigned cardIdx) const
+    {
+        h += cardIdx;
+    }
+
+    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
+            unsigned c5, unsigned c6, unsigned c7) const
+    {
+        return omp::HandEvaluator::evaluate(h);
+    }
+};
+
+#if OMP_BENCHMARK_3RD_PARTY
+
+// SKPokerEval
+class Skpe : public SevenEval, public AdaptorBase<Skpe>
+{
+public:
+    static const unsigned ASCENDING_RANKS = false;
+
+    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
+            unsigned c5, unsigned c6, unsigned c7) const
+    {
+        return GetRank(c1, c2, c3, c4, c5, c6, c7);
+    }
+};
+
+// 2+2 Evaluator
+// This requires some modifications to 2+2 code so that we don't have to read the table from a file.
+class Tpt: public AdaptorBase<Tpt>
+{
+public:
+    typedef unsigned Hand;
+    static const unsigned CARD_OFFSET = 1; // Card have indexes 1-52.
+
+    Tpt()
+    {
+        static bool initVar = (generateArrays(), initVar);
+    }
+
+    void initHand(Hand& h) const
+    {
+        h = 53;
+    }
+
+    void addCard(Hand& h, unsigned cardIdx) const
+    {
+        h = HR[h + cardIdx];
+    }
+
+    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
+            unsigned c5, unsigned c6, unsigned c7) const
+    {
+        return h;
+    }
+};
+
+// ACE Evaluator
+class Ace: public AdaptorBase<Ace, array<Card,ACEHAND>>
+{
+public:
+    static const unsigned RANK_MAJOR = false;
+
+    void initHand(Hand& h) const
+    {
+        h = Hand{};
+    }
+
+    void addCard(Hand& h, unsigned cardIdx) const
+    {
+        static uint32_t ACE_CARDS[52] = {
+            0x41, 0x101, 0x401, 0x1001, 0x4001, 0x10001, 0x40001, 0x100001,
+                0x400001, 0x1000001, 0x4000001, 0x10000001, 0x40000001,
+            0x42, 0x102, 0x402, 0x1002, 0x4002, 0x10002, 0x40002, 0x100002,
+                0x400002, 0x1000002, 0x4000002, 0x10000002, 0x40000002,
+            0x44, 0x104, 0x404, 0x1004, 0x4004, 0x10004, 0x40004, 0x100004,
+                0x400004, 0x1000004, 0x4000004, 0x10000004, 0x40000004,
+            0x48, 0x108, 0x408, 0x1008, 0x4008, 0x10008, 0x40008, 0x100008,
+                0x400008, 0x1000008, 0x4000008, 0x10000008, 0x40000008
+        };
+        ACE_addcard(h, ACE_CARDS[cardIdx]);
+    }
+
+    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
+            unsigned c5, unsigned c6, unsigned c7) const
+    {
+        Card E(Card h[]); // Works if ACE compiled as c++, otherwise we need extern C block.
+        return ACE_evaluate(const_cast<Card*>(&h[0]));
+    }
+};
+
+// Steve Brecher's Holdem Showdown
+class Sbhs: public AdaptorBase<Sbhs, Hand_T>
+{
+public:
+    static const unsigned RANK_MAJOR = false;
+
+    Sbhs()
+    {
+        static bool initVar = (Init_Hand_Eval(), initVar);
+    }
+
+    void initHand(Hand& h) const
+    {
+        ZeroHand(h);
+    }
+
+    void addCard(Hand& h, unsigned cardIdx) const
+    {
+        Hand c;
+        c.as64Bits = IndexToMask(cardIdx);
+        AddHandTo(h, c);
+    }
+
+    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
+            unsigned c5, unsigned c6, unsigned c7) const
+    {
+        return Hand_7_Eval(h);
+    }
+};
+
+// Pokersource poker-eval
+class Pse: public AdaptorBase<Sbhs, StdDeck_CardMask>
+{
+public:
+    void initHand(Hand& h) const
+    {
+        h = Hand{};
+    }
+
+    void addCard(Hand& h, unsigned cardIdx) const
+    {
+        StdDeck_CardMask_OR(h, h, StdDeck_MASK(cardIdx));
+    }
+
+    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
+            unsigned c5, unsigned c6, unsigned c7) const
+    {
+        return StdDeck_StdRules_EVAL_N(h, 7);
+    }
+};
+
+#endif //OMP_BENCHMARK_3RD_PARTY
 
 // Benchmark template that allows testing any evaluator with a proper adaptor.
 template<typename TEval>
@@ -237,196 +425,6 @@ private:
 
     TEval mEval;
 };
-
-// Base class for evaluator adaptors utilizing CRTP.
-template<class TEval, class THand = nullptr_t>
-class AdaptorBase
-{
-public:
-    typedef THand Hand;
-    // Card index format:
-    static const unsigned CARD_OFFSET = 0;
-    static const unsigned RANK_MAJOR = true;
-    static const unsigned ASCENDING_RANKS = true;
-
-    void initHand(THand& h) const
-    {
-    }
-
-    void addCard(THand& h, unsigned cardIdx) const
-    {
-    }
-
-    static unsigned cardIdxToCanonical(unsigned idx)
-    {
-        idx -= TEval::CARD_OFFSET;
-        unsigned rank = TEval::RANK_MAJOR ? idx >> 2 : idx % 13;
-        unsigned suit = TEval::RANK_MAJOR ? idx & 3 : idx / 13;
-        rank = TEval::ASCENDING_RANKS ? rank : 12 - rank;
-        return 4 * rank + suit;
-    }
-
-    static unsigned cardIdxFromCanonical(unsigned idx)
-    {
-        unsigned rank = idx >> 2;
-        unsigned suit = idx & 3;
-        rank = TEval::ASCENDING_RANKS ? rank : 12 - rank;
-        return (TEval::RANK_MAJOR ? 4 * rank + suit : 13 * suit + rank) + TEval::CARD_OFFSET;
-    }
-};
-
-// OMPEval
-class Omp : public omp::HandEvaluator, public AdaptorBase<Omp, omp::Hand>
-{
-public:
-    void initHand(Hand& h) const
-    {
-        h = Hand::empty();
-    }
-
-    void addCard(Hand& h, unsigned cardIdx) const
-    {
-        h += cardIdx;
-    }
-
-    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
-            unsigned c5, unsigned c6, unsigned c7) const
-    {
-        return omp::HandEvaluator::evaluate(h);
-    }
-};
-
-#if OMP_BENCHMARK_3RD_PARTY
-
-// SKPokerEval
-class Skpe : public SevenEval, public AdaptorBase<Skpe>
-{
-public:
-    static const unsigned ASCENDING_RANKS = false;
-
-    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
-            unsigned c5, unsigned c6, unsigned c7) const
-    {
-        return GetRank(c1, c2, c3, c4, c5, c6, c7);
-    }
-};
-
-// 2+2 Evaluator
-// This requires some modifications to 2+2 code so that we don't have to read the table from a file.
-class Tpt: public AdaptorBase<Tpt>
-{
-public:
-    typedef unsigned Hand;
-    static const unsigned CARD_OFFSET = 1; // Card have indexes 1-52.
-
-    Tpt()
-    {
-        static bool initVar = (generateArrays(), initVar);
-    }
-
-    void initHand(Hand& h) const
-    {
-        h = 53;
-    }
-
-    void addCard(Hand& h, unsigned cardIdx) const
-    {
-        h = HR[h + cardIdx];
-    }
-
-    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
-            unsigned c5, unsigned c6, unsigned c7) const
-    {
-        return h;
-    }
-};
-
-// ACE Evaluator
-class Ace: public AdaptorBase<Ace, array<Card,ACEHAND>>
-{
-public:
-    static const unsigned RANK_MAJOR = false;
-
-    void initHand(Hand& h) const
-    {
-        h = Hand{};
-    }
-
-    void addCard(Hand& h, unsigned cardIdx) const
-    {
-        static uint32_t ACE_CARDS[52] = {
-            0x41, 0x101, 0x401, 0x1001, 0x4001, 0x10001, 0x40001, 0x100001,
-                0x400001, 0x1000001, 0x4000001, 0x10000001, 0x40000001,
-            0x42, 0x102, 0x402, 0x1002, 0x4002, 0x10002, 0x40002, 0x100002,
-                0x400002, 0x1000002, 0x4000002, 0x10000002, 0x40000002,
-            0x44, 0x104, 0x404, 0x1004, 0x4004, 0x10004, 0x40004, 0x100004,
-                0x400004, 0x1000004, 0x4000004, 0x10000004, 0x40000004,
-            0x48, 0x108, 0x408, 0x1008, 0x4008, 0x10008, 0x40008, 0x100008,
-                0x400008, 0x1000008, 0x4000008, 0x10000008, 0x40000008
-        };
-        ACE_addcard(h, ACE_CARDS[cardIdx]);
-    }
-
-    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
-            unsigned c5, unsigned c6, unsigned c7) const
-    {
-        Card E(Card h[]); // Works if ACE compiled as c++, otherwise we need extern C block.
-        return ACE_evaluate(const_cast<Card*>(&h[0]));
-    }
-};
-
-// Steve Brecher's Holdem Showdown
-class Sbhs: public AdaptorBase<Sbhs, Hand_T>
-{
-public:
-    static const unsigned RANK_MAJOR = false;
-
-    Sbhs()
-    {
-        static bool initVar = (Init_Hand_Eval(), initVar);
-    }
-
-    void initHand(Hand& h) const
-    {
-        ZeroHand(h);
-    }
-
-    void addCard(Hand& h, unsigned cardIdx) const
-    {
-        Hand c;
-        c.as64Bits = IndexToMask(cardIdx);
-        AddHandTo(h, c);
-    }
-
-    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
-            unsigned c5, unsigned c6, unsigned c7) const
-    {
-        return Hand_7_Eval(h);
-    }
-};
-
-// Pokersource poker-eval
-class Pse: public AdaptorBase<Sbhs, StdDeck_CardMask>
-{
-public:
-    void initHand(Hand& h) const
-    {
-        h = Hand{};
-    }
-
-    void addCard(Hand& h, unsigned cardIdx) const
-    {
-        StdDeck_CardMask_OR(h, h, StdDeck_MASK(cardIdx));
-    }
-
-    unsigned evaluate(const Hand& h, unsigned c1, unsigned c2, unsigned c3, unsigned c4,
-            unsigned c5, unsigned c6, unsigned c7) const
-    {
-        return StdDeck_StdRules_EVAL_N(h, 7);
-    }
-};
-
-#endif //OMP_BENCHMARK_3RD_PARTY
 
 void benchmark()
 {

@@ -1,4 +1,4 @@
-CXXFLAGS += -O3 -std=c++11 -pthread -Wall
+CXXFLAGS += -O3 -std=c++11 -lpthread -Wall -Wpedantic
 ifeq ($(SSE4),1)
 	CXXFLAGS += -msse4.2
 endif
