@@ -356,9 +356,28 @@ class EquityCalculatorTest : public ttest::TestBase
     TTEST_CASE("test 6 - monte carlo") { monteCarloTest(TESTDATA[5]); }
 };
 
+void printBuildInfo()
+{
+    cout << "=== Build information ===" << endl;
+    cout << "" << (sizeof(void*) * 8) << "-bit" << endl;
+    #if OMP_x64
+    cout << "x64" << endl;
+    #endif
+    #if OMP_SSE2
+    cout << "SSE2" << endl;
+    #else
+    cout << "No SSE" << endl;
+    #endif
+    #if OMP_SSE4
+    cout << "SSE4" << endl;
+    #endif
+}
+
 int main()
 {
-    cout << "=== Tests ===" << endl;
+    printBuildInfo();
+
+    cout << endl << "=== Tests ===" << endl;
     cout << "Util:" << endl;
     UtilTest().run();
     cout << "Hand:" << endl;
