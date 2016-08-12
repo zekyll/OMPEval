@@ -2,8 +2,8 @@
 
 #include "Random.h"
 #include <algorithm>
-#include <cassert>
 #include <random>
+#include <cassert>
 
 namespace omp {
 
