@@ -234,39 +234,37 @@ void HandEvaluator::calculatePerfectHashOffsets()
             std::cout << std::endl;
         std::cout << std::hex << "0x" << PERF_HASH_ROW_OFFSETS[i] << std::dec << ", ";
     }
-    std::cout << std::endl;
 
-    // Output stats about memory usage of different tables.
-    auto calculateTableStats = [](const char* p, size_t elementSize, size_t count){
-        char dummy[64]{};
-        size_t totalCacheLines = 0, usedCacheLines = 0, usedElements = 0;
-        for (size_t i = 0; i < elementSize * count; i += 64) {
-            ++totalCacheLines;
-            bool used = false;
-            for (size_t j = 0; j < 64 && i + j < elementSize * count; j += elementSize) {
-                if (std::memcmp(p + i + j, dummy, elementSize)) {
-                    ++usedElements;
-                    used = true;
-                }
-            }
-            usedCacheLines += used;
-        }
-        std::cout << "cachelines: " << usedCacheLines << "/" << totalCacheLines
-             << "  kbytes: " << usedCacheLines / 16  << "/" << totalCacheLines / 16
-             << "  elements: " << usedElements << "/" << count
-             << std::endl;
-    };
-    std::cout << "FLUSH_LOOKUP ";
-    calculateTableStats((const char*)FLUSH_LOOKUP, 2, FLUSH_LOOKUP_SIZE);
-    std::cout << "ORIG_LOOKUP ";
-    calculateTableStats((const char*)ORIG_LOOKUP, 2, MAX_KEY + 1);
-    std::cout << "LOOKUP ";
-    calculateTableStats((const char*)LOOKUP, 2, maxIdx + 1);
-    std::cout << "OFFSETS ";
-    calculateTableStats((const char*)PERF_HASH_ROW_OFFSETS, 4, rows.size());
+    // Output stats.
     std::cout << std::endl;
+    outputTableStats("FLUSH_LOOKUP", FLUSH_LOOKUP, 2, FLUSH_LOOKUP_SIZE);
+    outputTableStats("ORIG_LOOKUP", ORIG_LOOKUP, 2, MAX_KEY + 1);
+    outputTableStats("LOOKUP", LOOKUP, 2, maxIdx + 1);
+    outputTableStats("OFFSETS", PERF_HASH_ROW_OFFSETS, 4, rows.size());
     std::cout << "lookup table size: " << maxIdx + 1 << std::endl;
     std::cout << "offset table size: " << rows.size() << std::endl;
+}
+
+// Output stats about memory usage of a lookup table.
+void HandEvaluator::outputTableStats(const char* name, const void* p, size_t elementSize, size_t count)
+{
+    char dummy[64]{};
+    size_t totalCacheLines = 0, usedCacheLines = 0, usedElements = 0;
+    for (size_t i = 0; i < elementSize * count; i += 64) {
+        ++totalCacheLines;
+        bool used = false;
+        for (size_t j = 0; j < 64 && i + j < elementSize * count; j += elementSize) {
+            if (std::memcmp((const char*)p + i + j, dummy, elementSize)) {
+                ++usedElements;
+                used = true;
+            }
+        }
+        usedCacheLines += used;
+    }
+    std::cout << name << ": cachelines: " << usedCacheLines << "/" << totalCacheLines
+         << "  kbytes: " << usedCacheLines / 16  << "/" << totalCacheLines / 16
+         << "  elements: " << usedElements << "/" << count
+         << std::endl;
 }
 
 }

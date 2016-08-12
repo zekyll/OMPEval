@@ -47,6 +47,7 @@ private:
                                    unsigned maxPair, unsigned maxTrips, unsigned maxStraight, bool flush = false);
     static unsigned getKey(uint64_t rankCounts, bool flush);
     static unsigned getBiggestStraight(uint64_t rankCounts);
+    static void outputTableStats(const char* name, const void* p, size_t elementSize, size_t count);
 
     // Rank multipliers for non-flush and flush hands.
     static const unsigned RANKS[RANK_COUNT];
