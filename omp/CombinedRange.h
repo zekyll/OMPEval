@@ -19,7 +19,7 @@ public:
     struct Combo
     {
         uint64_t cardMask;
-        std::array<uint8_t,2> holeCards[MAX_PLAYERS];
+        std::array<std::array<uint8_t,2>,MAX_PLAYERS> holeCards;
         Hand evalHands[MAX_PLAYERS];
     };
 
