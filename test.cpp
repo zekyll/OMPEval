@@ -5,7 +5,9 @@
 #include "ttest/ttest.h"
 #include <iostream>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
+#include <list>
 #include <numeric>
 #include <cmath>
 
@@ -49,13 +51,35 @@ class UtilTest : public ttest::TestBase
 class HandTest : public ttest::TestBase
 {
     #if OMP_SSE2
-    TTEST_CASE("hands are 16-byte aligned for SSE")
+    TTEST_CASE("has 16-byte alignment and size")
     {
+        TTEST_EQUAL(OMP_ALIGNOF(Hand), 16u);
+        TTEST_EQUAL(sizeof(Hand), 16u);
+    }
+
+    TTEST_CASE("allocated objects are aligned")
+    {
+        struct HandHash
+        {
+            size_t operator()(const Hand& h) const
+            {
+                return h.rankKey();
+            }
+        };
+
         Hand h;
         TTEST_EQUAL((uintptr_t)&h % sizeof(Hand), 0u);
-        std::vector<std::vector<Hand>> v(10, std::vector<Hand>(1));
-        for (unsigned i = 0; i < 10; ++i)
-            TTEST_EQUAL((uintptr_t)&v[i][0] % sizeof(Hand), 0u);
+
+        vector<Hand> v;
+        unordered_set<Hand, HandHash> s;
+        unordered_map<Hand,Hand,HandHash> m;
+        list<Hand> l;
+        for (unsigned i = 0; i < 52; ++i) {
+            TTEST_EQUAL((uintptr_t)&*v.insert(v.end(), i) % sizeof(Hand), 0u);
+            TTEST_EQUAL((uintptr_t)&*s.insert(i).first % sizeof(Hand), 0u);
+            TTEST_EQUAL((uintptr_t)&(m[i] = Hand(i)) % sizeof(Hand), 0u);
+            TTEST_EQUAL((uintptr_t)&*l.insert(l.end(), i) % sizeof(Hand), 0u);
+        }
     }
     #endif
 

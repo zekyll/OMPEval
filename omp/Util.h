@@ -19,8 +19,8 @@
 #ifndef OMP_SSE2
     #if (__SSE2__ || (_MSC_VER && (_M_X64 || _M_IX86_FP >= 2)))
         #define OMP_SSE2 1
-        // MSVC has no way to distuingish between SSE2/SSE4, so we only enable SSE4 with AVX.
-		#define OMP_SSE4 (__SSE4_1__ || (_MSC_VER && __AVX__))
+        // MSVC has no way to distuingish between SSE2/SSE4, so we only enable SSE4 there with AVX.
+        #define OMP_SSE4 (__SSE4_1__ || (_MSC_VER && __AVX__))
     #endif
 #endif
 
@@ -99,7 +99,7 @@ static inline void* alignedNew(size_t size, unsigned alignment)
         alignment = OMP_ALIGNOF(void*);
 
     // Allocate enough memory so that we can find an aligned block inside it.
-    char* pwrapper = new char[size + alignment];
+    char* pwrapper = (char*)::operator new(size + alignment);
     if (!pwrapper)
         return nullptr;
 
@@ -116,25 +116,53 @@ static inline void* alignedNew(size_t size, unsigned alignment)
 // Deallocates memory allocated by alignedNew().
 static inline void alignedDelete(void* p)
 {
-    delete[] static_cast<char**>(p)[-1];
+    ::operator delete(static_cast<char**>(p)[-1]);
 }
 
-// Custom allocator for standard library containers that guarantees correct aligment.
-template<class T, size_t tAlignment = OMP_ALIGNOF(T)>
+// Custom allocator that guarantees correct aligment inside standard containers for objects
+// that have alignment greater than std::max_align_t.
+template<class T>
 class AlignedAllocator
 {
 public:
     typedef T value_type;
 
+    AlignedAllocator() = default;
+
+    template<class U>
+    AlignedAllocator(const AlignedAllocator<U>&)
+    {
+    }
+
     T* allocate(size_t n)
     {
-        return static_cast<T*>(alignedNew(n * sizeof(T), tAlignment));
+        return static_cast<T*>(alignedNew(n * sizeof(T), OMP_ALIGNOF(T)));
     }
 
     void deallocate(T* p, size_t n)
     {
         alignedDelete(p);
     }
+
+    template<class U>
+    struct rebind
+    {
+        typedef AlignedAllocator<U> other;
+    };
+
+    template <class U>
+    bool operator==(const AlignedAllocator<U>&) const
+    {
+        return true;
+    }
+
+    template <class U>
+    bool operator!=(const AlignedAllocator<U>&) const
+    {
+        return false;
+    }
+
+    // The following stuff should not be needed but some compilers aren't fully compatible.
 
     typedef T* pointer;
     typedef const T* const_pointer;
@@ -143,38 +171,61 @@ public:
     typedef std::size_t size_type;
     typedef std::ptrdiff_t different_type;
 
+    template<class U, class... Args>
+    void construct(U* p, Args&&... args)
+    {
+        new(p) U(std::forward<Args>(args)...);
+    }
+
+    template<class U>
+    void destroy(U* p)
+    {
+        p->~U();
+    }
+
     static size_t max_size()
     {
         return std::numeric_limits<size_t>::max() / sizeof(T);
     }
 
-    template<class U, class... Args>
-    void construct(U* p, Args&&... args)
+    AlignedAllocator select_on_container_copy_construction() const
     {
-        new(p)T(args...);
-    }
-
-    void destroy(pointer p)
-    {
-        p->~T();
-    }
-
-    std::allocator<T> select_on_container_copy_construction() const
-    {
-        return std::allocator<T>();
+        return AlignedAllocator();
     }
 };
 
+// Specializes std::allocator for TYPE and pair<T,TYPE>. This is for convenience so that it's
+// not necessary to specify a custom allocator as a template argument for STL containers.
+// It's a bit of a hack, because the specialization isn't fully conformant (rebind isn't
+// symmetric). allocator_traits is specialized to fix some issues caused by that.
+// On x64 the allocator isn't needed because default allocation is typically 16-byte aligned.
 #if OMP_SSE2 && !OMP_X64
-#define OMP_DEFINE_ALIGNED_ALLOCATOR(T) \
+#define OMP_ALIGNED_STD_ALLOCATOR(TYPE) \
     namespace std { \
-    template<> \
-    class allocator<T> : public omp::AlignedAllocator<T, sizeof(T)> \
-    { \
-    }; \
+        template<> \
+        class allocator<TYPE> : public omp::AlignedAllocator<TYPE> \
+        { \
+        public: \
+            allocator() = default; \
+            template<class U> allocator(const allocator<U>&) { } \
+            template<class U> allocator(const omp::AlignedAllocator<U>&) { } \
+        }; \
+        template<typename T> \
+        class allocator<pair<T,TYPE>> : public omp::AlignedAllocator<pair<T,TYPE>> \
+        { \
+        public: \
+            allocator() = default; \
+            template<class U> allocator(const allocator<U>&) { } \
+            template<class U> allocator(const omp::AlignedAllocator<U>&) { } \
+        }; \
+        template <> \
+        class allocator_traits<allocator<TYPE>> : public allocator_traits<omp::AlignedAllocator<TYPE>> { }; \
+        template <typename T> \
+        class allocator_traits<allocator<pair<T,TYPE>>> \
+            : public allocator_traits<omp::AlignedAllocator<pair<T,TYPE>>> { }; \
     }
 #else
-    #define OMP_DEFINE_ALIGNED_ALLOCATOR(T)
+    #define OMP_ALIGNED_STD_ALLOCATOR(TYPE)
 #endif
 
 }

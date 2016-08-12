@@ -42,7 +42,9 @@ struct Hand
     // rank ranges from 0 (deuce) to 12 (ace) and suit is from 0 (spade) to 3 (diamond).
     Hand(unsigned cardIdx)
     {
+        #if OMP_SSE2
         omp_assert((uintptr_t)&mData % sizeof(__m128i) == 0);
+        #endif
         omp_assert(cardIdx < CARD_COUNT);
         *this = CARDS[cardIdx];
     }
@@ -50,6 +52,9 @@ struct Hand
     // Initialize hand from two cards.
     Hand(std::array<uint8_t,2> holeCards)
     {
+        #if OMP_SSE2
+        omp_assert((uintptr_t)&mData % sizeof(__m128i) == 0);
+        #endif
         omp_assert(holeCards[0] < CARD_COUNT && holeCards[1] < CARD_COUNT);
         *this = CARDS[holeCards[0]] + CARDS[holeCards[1]];
     }
@@ -94,6 +99,12 @@ struct Hand
         mMask -= hand2.mMask;
         #endif
         return *this;
+    }
+
+    // Equality comparison.
+    bool operator==(const Hand& hand2) const
+    {
+        return mask() == hand2.mask() && key() == hand2.key();
     }
 
     // Initialize a new empty hand.
@@ -235,6 +246,6 @@ private:
 
 // Some 32-bit compilers don't align __m128i correctly inside containers, which causes segfault. We need a
 // custom allocator to fix the alignment.
-OMP_DEFINE_ALIGNED_ALLOCATOR(omp::Hand)
+OMP_ALIGNED_STD_ALLOCATOR(omp::Hand)
 
 #endif // OMP_HAND_H
