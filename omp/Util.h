@@ -24,6 +24,12 @@
     #endif
 #endif
 
+#if _MSC_VER
+    #define OMP_FORCE_INLINE __forceinline
+#else
+    #define OMP_FORCE_INLINE
+#endif
+
 namespace omp {
 
 inline unsigned countTrailingZeros(unsigned x)

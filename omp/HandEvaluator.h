@@ -19,7 +19,7 @@ public:
     // cards. A missing card is considered the worst kicker, e.g. K < KQJT8 < A < AK < KKAQJ < AA < AA2 < AA4 < AA432.
     // Hand category can be extracted by dividing the value by 4096. 1=highcard, 2=pair, etc.
     template<bool tFlushPossible = true>
-    uint16_t evaluate(const Hand& hand) const
+    OMP_FORCE_INLINE uint16_t evaluate(const Hand& hand) const
     {
         omp_assert(hand.count() <= 7 && hand.count() == bitCount(hand.mask()));
         if (!tFlushPossible || !hand.hasFlush()) {
