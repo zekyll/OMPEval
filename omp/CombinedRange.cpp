@@ -9,7 +9,7 @@
 namespace omp {
 
 CombinedRange::CombinedRange()
-    : mPlayerCount(0)
+    : mPlayerCount(0), mSize(0)
 {
 }
 

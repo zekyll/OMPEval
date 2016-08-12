@@ -35,7 +35,7 @@ class UtilTest : public ttest::TestBase
         TTEST_EQUAL(bitCount(~0u), sizeof(unsigned) * CHAR_BIT);
         TTEST_EQUAL(bitCount(0xf0u), 4u);
         TTEST_EQUAL(bitCount(~0ul), sizeof(unsigned long) * CHAR_BIT);
-        TTEST_EQUAL(bitCount(0xf0ull), 4u);
+        TTEST_EQUAL(bitCount(0xf0ul), 4u);
         TTEST_EQUAL(bitCount(~0ull), sizeof(unsigned long long) * CHAR_BIT);
         TTEST_EQUAL(bitCount(0x0ff00000000000f0ull), 12u);
     }
