@@ -285,7 +285,7 @@ void EquityCalculator::enumerate()
     for (;;++enumPosition) {
         // Ask for more work if we don't have any.
         if (enumPosition >= enumEnd) {
-            unsigned batchSize = std::max<unsigned>(2000000 / postflopCombos, 1);
+            uint64_t batchSize = std::max<uint64_t>(2000000 / postflopCombos, 1);
             std::tie(enumPosition, enumEnd) = reserveBatch(batchSize);
             if (enumPosition >= enumEnd)
                 break;
@@ -304,7 +304,7 @@ void EquityCalculator::enumerate()
             uint64_t remainder = randomizedEnumPos - quotient * mCombinedRanges[i].combos().size();
             randomizedEnumPos = quotient;
 
-            const CombinedRange::Combo& combo = mCombinedRanges[i].combos()[remainder];
+            const CombinedRange::Combo& combo = mCombinedRanges[i].combos()[(size_t)remainder];
             if (usedCardsMask & combo.cardMask) {
                 ok = false;
                 break;
@@ -650,7 +650,7 @@ std::vector<std::vector<std::array<uint8_t,2>>> EquityCalculator::removeInvalidC
 }
 
 // Work allocation for enumeration threads.
-std::pair<uint64_t,uint64_t> EquityCalculator::reserveBatch(unsigned batchCount)
+std::pair<uint64_t,uint64_t> EquityCalculator::reserveBatch(uint64_t batchCount)
 {
     std::lock_guard<std::mutex> lock(mMutex);
 

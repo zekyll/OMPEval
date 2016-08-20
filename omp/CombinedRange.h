@@ -1,7 +1,8 @@
-#ifndef COMBINED_RANGE_H
-#define COMBINED_RANGE_H
+#ifndef OMP_COMBINED_RANGE_H
+#define OMP_COMBINED_RANGE_H
 
 #include "HandEvaluator.h"
+#include "Util.h"
 #include <vector>
 #include <array>
 #include <cstdint>
@@ -18,7 +19,7 @@ public:
     struct Combo
     {
         uint64_t cardMask;
-        std::array<uint8_t,2> holeCards[MAX_PLAYERS];
+        std::array<std::array<uint8_t,2>,MAX_PLAYERS> holeCards;
         Hand evalHands[MAX_PLAYERS];
     };
 
@@ -51,7 +52,7 @@ public:
         return mPlayers;
     }
 
-    const std::vector<Combo>& combos() const
+    const std::vector<Combo,AlignedAllocator<Combo>>& combos() const
     {
         return mCombos;
     }
@@ -63,7 +64,7 @@ public:
 
 private:
 
-    std::vector<Combo> mCombos;
+    std::vector<Combo,AlignedAllocator<Combo>> mCombos;
     std::array<unsigned, MAX_PLAYERS> mPlayers;
     unsigned mPlayerCount;
     size_t mSize;
@@ -71,4 +72,4 @@ private:
 
 }
 
-#endif // COMBINED_RANGE_H
+#endif // OMP_COMBINED_RANGE_H

@@ -1,5 +1,5 @@
-#ifndef RANDOM
-#define RANDOM
+#ifndef OMP_RANDOM_H
+#define OMP_RANDOM_H
 
 #include "../libdivide/libdivide.h"
 #include <cstdint>
@@ -217,4 +217,4 @@ private:
 
 }
 
-#endif // RANDOM
+#endif // OMP_RANDOM_H

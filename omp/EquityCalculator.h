@@ -1,11 +1,12 @@
-#ifndef EQUITYCALCULATOR_H
-#define EQUITYCALCULATOR_H
+#ifndef OMP_EQUITYCALCULATOR_H
+#define OMP_EQUITYCALCULATOR_H
 
 #include "CombinedRange.h"
 #include "Random.h"
 #include "CardRange.h"
 #include "HandEvaluator.h"
 #include "Constants.h"
+#include "Util.h"
 #include <chrono>
 #include <thread>
 #include <mutex>
@@ -149,11 +150,11 @@ private:
     void simulateRandomWalkMonteCarlo();
     bool randomizeHoleCards(uint64_t &usedCardsMask, unsigned* comboIndexes, Hand* playerHands,
                             Rng& rng, FastUniformIntDistribution<unsigned,21>*comboDists);
-    void randomizeBoard(Hand& board, unsigned remainingCards, uint64_t usedCardsMask,
+    OMP_FORCE_INLINE void randomizeBoard(Hand& board, unsigned remainingCards, uint64_t usedCardsMask,
                         Rng& rng, FastUniformIntDistribution<unsigned,16>& cardDist);
     template<bool tFlushPossible = true>
-    void evaluateHands(const Hand* playerHands, unsigned nplayers, const Hand& board, BatchResults* stats,
-                       unsigned weight);
+    OMP_FORCE_INLINE void evaluateHands(const Hand* playerHands, unsigned nplayers, const Hand& board,
+            BatchResults* stats, unsigned weight);
     void enumerate();
     void enumerateBoard(const HandWithPlayerIdx* playerHands, unsigned nplayers,
                    const Hand& board, uint64_t usedCardsMask, BatchResults* stats);
@@ -169,7 +170,7 @@ private:
     static Hand getBoardFromBitmask(uint64_t board);
     static std::vector<std::vector<std::array<uint8_t,2>>> removeInvalidCombos(const std::vector<CardRange>& handRanges,
                                                                uint64_t reservedCards);
-    std::pair<uint64_t,uint64_t> reserveBatch(unsigned batchCount);
+    std::pair<uint64_t,uint64_t> reserveBatch(uint64_t batchCount);
     uint64_t getPreflopCombinationCount();
     uint64_t getPostflopCombinationCount();
 
@@ -196,7 +197,7 @@ private:
     unsigned mCombinedRangeCount;
     uint64_t mDeadCards, mBoardCards;
     HandEvaluator mEval;
-    double mStdevTarget = 5e-5, mTimeLimit = INFINITE, mUpdateInterval = 0.1;
+    double mStdevTarget = 5e-5, mTimeLimit = (double)INFINITE, mUpdateInterval = 0.1;
     uint64_t mHandLimit = INFINITE;
     std::function<void(const Results& results)> mCallback;
 
@@ -206,4 +207,4 @@ private:
 
 }
 
-#endif // EQUITYCALCULATOR_H
+#endif // OMP_EQUITYCALCULATOR_H

@@ -184,7 +184,7 @@ void CardRange::addCombo(unsigned c1, unsigned c2)
     omp_assert(c1 != c2);
     if (c1 >> 2 < c2 >> 2 || (c1 >> 2 == c2 >> 2 && (c1 & 3) < (c2 & 3)))
         std::swap(c1, c2);
-    mCombinations.emplace_back(std::array<uint8_t,2>{(uint8_t)c1, (uint8_t)c2});
+    mCombinations.push_back({(uint8_t)c1, (uint8_t)c2});
 }
 
 // Removes duplicate combos.

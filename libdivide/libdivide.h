@@ -1,5 +1,4 @@
 #pragma once
-
 // libdivide.h
 // Copyright 2010 - 2016 ridiculous_fish
 
@@ -9,6 +8,9 @@
 
 #if defined(_MSC_VER)
 #define LIBDIVIDE_VC 1
+// disable warning C4146: unary minus operator applied to
+// unsigned type, result still unsigned
+#pragma warning(disable: 4146)
 #endif
 
 #ifdef __cplusplus
@@ -52,7 +54,7 @@ typedef unsigned __int8 uint8_t;
 #define HAS_INT128_T 1
 #endif
 
-#if defined(__x86_64__) || defined(_WIN64) || defined(_M_64)
+#if defined(__x86_64__) || defined(_WIN64) || defined(_M_X64)
 #define LIBDIVIDE_IS_X86_64 1
 #endif
 
@@ -84,17 +86,13 @@ typedef unsigned __int8 uint8_t;
 #include <smmintrin.h>
 #endif
 
-// Silly defines to prevent Xcode indenting
-#define LIBDIVIDE_OPEN_BRACKET {
-#define LIBDIVIDE_CLOSE_BRACKET }
-
 #ifdef __cplusplus
 // We place libdivide within the libdivide namespace, and that goes in an
 // anonymous namespace so that the functions are only visible to files that
 // #include this header and don't get external linkage. At least that's the
 // theory.
-namespace LIBDIVIDE_OPEN_BRACKET
-namespace libdivide LIBDIVIDE_OPEN_BRACKET
+namespace {
+namespace libdivide {
 #endif
 
 // Explanation of "more" field: bit 6 is whether to use shift path. If we are
@@ -277,20 +275,6 @@ LIBDIVIDE_API __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const s
 
 //////// Internal Utility Functions
 
-enum libdivide_internal_strategy_t {
-    libdivide_strat_default,
-    libdivide_strat_branchfree,
-    libdivide_strat_specialized
-};
-
-enum libdivide_internal_salgo_t {
-    libdivide_salgo_shift_positive,
-    libdivide_salgo_shift_negative,
-    libdivide_salgo_add_positive,
-    libdivide_salgo_add_negative,
-    libdivide_salgo_noadd
-};
- 
 static inline uint32_t libdivide__mullhi_u32(uint32_t x, uint32_t y) {
     uint64_t xl = x, yl = y;
     uint64_t rl = xl * yl;
@@ -298,12 +282,12 @@ static inline uint32_t libdivide__mullhi_u32(uint32_t x, uint32_t y) {
 }
  
 static uint64_t libdivide__mullhi_u64(uint64_t x, uint64_t y) {
-#if HAS_INT128_T
+#if LIBDIVIDE_VC && LIBDIVIDE_IS_X86_64
+    return __umulh(x, y);
+#elif HAS_INT128_T
     __uint128_t xl = x, yl = y;
     __uint128_t rl = xl * yl;
     return (uint64_t)(rl >> 64);
-#elif LIBDIVIDE_VC && LIBDIVIDE_IS_X86_64
-    return __umulh(x, y);
 #else
     // full 128 bits are x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
     const uint32_t mask = 0xFFFFFFFF;
@@ -321,12 +305,12 @@ static uint64_t libdivide__mullhi_u64(uint64_t x, uint64_t y) {
 }
  
 static inline int64_t libdivide__mullhi_s64(int64_t x, int64_t y) {
-#if HAS_INT128_T
+#if LIBDIVIDE_VC && LIBDIVIDE_IS_X86_64
+    return __mulh(x, y);
+#elif HAS_INT128_T
     __int128_t xl = x, yl = y;
     __int128_t rl = xl * yl;
     return (int64_t)(rl >> 64);    
-#elif LIBDIVIDE_VC && LIBDIVIDE_IS_X86_64
-    return __mulh(x, y);
 #else
     // full 128 bits are x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
     const uint32_t mask = 0xFFFFFFFF;
@@ -470,52 +454,8 @@ static inline __m128i libdivide_mullhi_s32_flat_vector(__m128i a, __m128i b) {
 #endif
 #endif
  
-static inline int32_t libdivide__count_trailing_zeros32(uint32_t val) {
-#if __GNUC__ || __has_builtin(__builtin_ctz)
-    // Fast way to count trailing zeros
-    return __builtin_ctz(val);
-#elif LIBDIVIDE_VC
-    unsigned long result;
-    if (_BitScanForward(&result, val)) {
-        return result;
-    }
-    return 0;
-#else
-    // Dorky way to count trailing zeros. Note that this hangs for val = 0!
-    int32_t result = 0;
-    // Set v's trailing 0s to 1s and zero rest
-    val = (val ^ (val - 1)) >> 1;
-    while (val) {
-        val >>= 1;
-        result++;
-    }
-    return result;
-#endif
-}
- 
-static inline int32_t libdivide__count_trailing_zeros64(uint64_t val) {
-#if __LP64__ && (__GNUC__ || __has_builtin(__builtin_ctzll))
-    // Fast way to count trailing zeros.
-    // Note that we disable this in 32 bit because gcc does something horrible,
-    // it calls through to a dynamically bound function.
-    return __builtin_ctzll(val);
-#elif LIBDIVIDE_VC && _WIN64
-    unsigned long result;
-    if (_BitScanForward64(&result, val)) {
-            return result;
-    }
-    return 0;
-#else
-    // Pretty good way to count trailing zeros.
-    // Note that this hangs for val = 0!
-    uint32_t lo = val & 0xFFFFFFFF;
-    if (lo != 0) return libdivide__count_trailing_zeros32(lo);
-    return 32 + libdivide__count_trailing_zeros32(val >> 32);
-#endif
-}
- 
 static inline int32_t libdivide__count_leading_zeros32(uint32_t val) {
-#if __GNUC__ || __has_builtin(__builtin_clzll)
+#if __GNUC__ || __has_builtin(__builtin_clz)
     // Fast way to count leading zeros
     return __builtin_clz(val);    
 #elif LIBDIVIDE_VC
@@ -525,14 +465,14 @@ static inline int32_t libdivide__count_leading_zeros32(uint32_t val) {
     }
     return 0;
 #else
-    // Dorky way to count leading zeros.
-    // Note that this hangs for val = 0!
-    int32_t result = 0;
-    while (! (val & (1U << 31))) {
-        val <<= 1;
-        result++;
-    }
-    return result;    
+  int32_t result = 0;
+  uint32_t hi = 1U << 31;
+
+  while (~val & hi) {
+      hi >>= 1;
+      result++;
+  }
+  return result;
 #endif
 }
     
@@ -547,14 +487,10 @@ static inline int32_t libdivide__count_leading_zeros64(uint64_t val) {
     }
     return 0;
 #else
-    // Dorky way to count leading zeros.
-    // Note that this hangs for val = 0!
-    int32_t result = 0;
-    while (! (val & (1ULL << 63))) {
-        val <<= 1;
-        result++;
-    }
-    return result;
+    uint32_t hi = val >> 32;
+    uint32_t lo = val & 0xFFFFFFFF;
+    if (hi != 0) return libdivide__count_leading_zeros32(hi);
+    return 32 + libdivide__count_leading_zeros32(lo);
 #endif
 }
 
@@ -590,7 +526,6 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
             : [v] "r"(v), "a"(u0), "d"(u1)
             );
     return result;
-
 }
 #else
 
@@ -1321,7 +1256,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t absD = 1U << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
-            absD *= -1; // multiplying by -1 instead of negating prevents warning C4146 in VC
+            absD = -absD;
         }
         return (int32_t)absD;
     } else {
@@ -1586,9 +1521,7 @@ int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_br
     uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     // must be arithmetic shift and then sign extend
     int64_t sign = (int8_t)more >> 7;
-    
     int64_t magic = denom->magic;
-    
     int64_t q = libdivide__mullhi_s64(magic, numer);
     q += numer;
     
@@ -1613,7 +1546,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     if (denom->magic == 0) { // shift path
         uint64_t absD = 1ULL << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
-            absD *= -1; // multiplying by -1 instead of negating prevents warning C4146 in VC++
+            absD = -absD;
         }
         return (int64_t)absD;
     } else {
@@ -1991,11 +1924,11 @@ __m128i operator/(__m128i numer, const divider<int_type, ALGO> & denom) {
 }
 #endif
 
-#endif //__cplusplus
+#endif // __cplusplus
     
 #endif // LIBDIVIDE_HEADER_ONLY
 
 #ifdef __cplusplus
-LIBDIVIDE_CLOSE_BRACKET // close namespace libdivide
-LIBDIVIDE_CLOSE_BRACKET // close anonymous namespace
+} // close namespace libdivide
+} // close anonymous namespace
 #endif

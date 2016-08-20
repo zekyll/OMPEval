@@ -2,13 +2,14 @@
 
 #include "Random.h"
 #include <algorithm>
-#include <cassert>
+#include <iterator>
 #include <random>
+#include <cassert>
 
 namespace omp {
 
 CombinedRange::CombinedRange()
-    : mPlayerCount(0)
+    : mPlayerCount(0), mSize(0)
 {
 }
 
@@ -39,8 +40,8 @@ CombinedRange CombinedRange::join(const CombinedRange& range2) const
                 continue;
             Combo c;
             c.cardMask = c1.cardMask | c2.cardMask;
-            std::copy(c1.holeCards, c1.holeCards + mPlayerCount, c.holeCards);
-            std::copy(c2.holeCards, c2.holeCards + range2.mPlayerCount, c.holeCards + mPlayerCount);
+            std::copy(std::begin(c1.holeCards), std::begin(c1.holeCards) + mPlayerCount, std::begin(c.holeCards));
+            std::copy(std::begin(c2.holeCards), std::begin(c2.holeCards) + range2.mPlayerCount, std::begin(c.holeCards) + mPlayerCount);
             for (unsigned i = 0; i < newRange.mPlayerCount; ++i)
                 c.evalHands[i] = Hand(c.holeCards[i]);
             newRange.mCombos.push_back(c);
