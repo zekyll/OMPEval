@@ -1,0 +1,13 @@
+# Use C++ build environment.
+language: cpp
+
+before_install:
+    - sudo apt-get install cmake
+
+# Run the build script.
+script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
+    - ./ompeval
