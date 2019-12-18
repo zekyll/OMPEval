@@ -44,7 +44,7 @@ In x64 mode both Monte carlo and enumeration are roughly 2-10x faster (per threa
 
 ### Basic usage
 ```c++
-#include <omp/EquityCalculator.h>
+#include "omp/EquityCalculator.h"
 #include <iostream>
 int main()
 {
