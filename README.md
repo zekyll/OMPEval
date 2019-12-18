@@ -57,7 +57,7 @@ int main()
 ```
 ### Advanced usage
 ```c++
-#include <omp/EquityCalculator.h>
+#include "omp/EquityCalculator.h"
 #include <iostream>
 using namespace omp;
 using namespace std;
