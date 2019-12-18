@@ -20,7 +20,7 @@ Rand2:  520              87    466              62    529              72
 ```
 ###Usage
 ```c++
-#include <omp/HandEvaluator.h>
+#include "omp/HandEvaluator.h"
 #include <iostream>
 using namespace omp;
 int main()
@@ -42,9 +42,9 @@ int main()
 
 In x64 mode both Monte carlo and enumeration are roughly 2-10x faster (per thread) than the free version of Equilab (except headsup enumeration where EquiLab uses precalculated results).
 
-###Basic usage
+### Basic usage
 ```c++
-#include <omp/EquityCalculator.h>
+#include "omp/EquityCalculator.h"
 #include <iostream>
 int main()
 {
@@ -55,9 +55,9 @@ int main()
     std::cout << r.equity[0] << " " << r.equity[1] << std::endl;
 }
 ```
-###Advanced usage
+### Advanced usage
 ```c++
-#include <omp/EquityCalculator.h>
+#include "omp/EquityCalculator.h"
 #include <iostream>
 using namespace omp;
 using namespace std;
@@ -86,7 +86,13 @@ int main()
 ```
 
 ## Building
-To build a static library (./lib/ompeval.a) on Unix systems, use `make`. To enable -msse4.1 switch, use `make SSE4=1`. Run tests with `./test`. For Windows there's currently no build files, so you will have to compile everything manually. The code has been tested with MSVC2013, TDM-GCC 5.1.0 and MinGW64 6.1, Clang 3.8.1 on Cygwin, and g++ 4.8 on Debian.
+To build a static library (`./build/ompeval`) on Unix systems, use `cmake`. To enable -msse4.1 switch, use `make SSE4=1`. For Windows there's currently no build files, so you will have to compile everything manually. The code has been tested with MSVC2013, TDM-GCC 5.1.0 and MinGW64 6.1, Clang 3.8.1 on Cygwin, and g++ 7.4.0 on Debian. See build commands below:
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ## About the algorithms used
 
