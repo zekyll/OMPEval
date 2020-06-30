@@ -6,6 +6,7 @@
 #include "Hand.h"
 #include <cstdint>
 #include <cassert>
+#include <functional>
 
 namespace omp {
 
